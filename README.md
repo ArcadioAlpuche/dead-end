@@ -1,3 +1,42 @@
+# Dead End — First Playable
+
+A small side-view exploration prototype set in the Bellweather Hotel, built on the original Phaser 4 + React + TypeScript template retained below.
+
+## Run
+
+Dependencies are already installed in this checkout. Start the existing Vite server:
+
+```sh
+npm run dev-nolog
+```
+
+Open the local URL printed by Vite (normally `http://localhost:8080`). Use a desktop browser and keyboard.
+
+- **WASD / arrows:** move across the floor and its shallow depth.
+- **E:** interact with the nearby highlighted target; advance dialogue.
+- **Tab:** open/close the notebook. **Escape:** close the notebook or leave dialogue.
+- **Up / down in the notebook:** scroll notes.
+
+Explore the lobby, staircase, fourth-floor hallway, and unlocked Room 407. Speak to the receptionist and examine the champagne glass, folded note, and bed. Stair travel abbreviates three flights. The notebook separates direct observations from unverified testimony. Exploration never requires a case.
+
+Progress saves locally in the same browser origin. Movement checkpoints occur every two seconds; discoveries and completed transitions save immediately. Unreadable saves are preserved, with an unsaved playable session and a visible notice. There is no in-game reset/recovery UI yet. `localhost` and `127.0.0.1` have separate saves.
+
+## Verify
+
+```sh
+./node_modules/.bin/tsc --noEmit -p tsconfig.json
+node --test tests/exploration.test.mjs
+npm run build-nolog
+```
+
+Tests require Node 22.18+ or Node 24+ for native TypeScript support. A module-detection warning from the unchanged template package metadata is harmless. There is no separate installed test framework or lint script.
+
+The implementation uses structured content in `src/content/hotel.ts`, framework-independent rules in `src/core`, Phaser rendering/movement adapters, React UI in `src/ui`, and a local persistence adapter. See [game design](docs/game-design.md) and [architecture](docs/architecture.md) for boundaries and extension guidance.
+
+This is a placeholder exploration slice: no full case system, item collection, AI, backend, gambling, audio, or touch controls. The original template build configuration and dependencies are preserved.
+
+---
+
 # Phaser React TypeScript Template
 
 This is a Phaser project template that uses the React framework and Vite for bundling. It includes a bridge for React to Phaser game communication, hot-reloading for quick development workflow and scripts to generate production-ready builds.
