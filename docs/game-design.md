@@ -10,6 +10,8 @@ The receptionist has a short scripted conversation. Room 407 is vacant and unloc
 
 This build intentionally implements the exploration subset of the original milestone below. Case offers/acceptance, inventory collection, deductions, accusations, and case resolution remain future work. In particular, the case acceptance checks below are design targets, not claims about the current build.
 
+The current playable version uses the approved Simplified Detective V2: a stylized human noir detective with short legs, a walk loop using seven of its eight source frames to avoid a repeated end pose, and a static idle pose. Minor animation imperfections are accepted for this milestone; the grounded setting and story rules are unchanged. The previous detective configuration, including its coin flip, remains available through a development configuration switch. These animations are visual only: they do not change collision footprints, movement, interactions, or saved knowledge. The geometry placeholder remains the fallback when required sheets are unavailable; the [asset contract](character-animation.md) records the current configuration and artwork limitations.
+
 ## Vision and tone
 
 Dead End is a 1940s-inspired, illustrated 2D detective adventure about a flawed, sarcastic private investigator navigating a believable city. Exploration is the primary activity: the player walks through connected places, notices details, meets people, and decides which stories deserve investigation.

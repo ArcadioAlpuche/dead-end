@@ -1,4 +1,4 @@
-import { GameObjects, Scene } from 'phaser';
+import type { GameObjects, Scene } from 'phaser';
 import type { LocationDefinition, Prop } from '../../core/model.ts';
 
 const ink = 0x10181e;

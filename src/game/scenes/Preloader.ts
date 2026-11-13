@@ -1,4 +1,6 @@
 import { Scene } from 'phaser';
+import { detectiveSpriteConfig } from '../characters/detective';
+import { queueCharacterSprites } from '../characters/spriteAssets';
 
 export class Preloader extends Scene
 {
@@ -29,6 +31,7 @@ export class Preloader extends Scene
 
     preload ()
     {
+        queueCharacterSprites(this, detectiveSpriteConfig);
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
 

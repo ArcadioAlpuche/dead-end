@@ -44,7 +44,7 @@ Before claiming a check passes, run the relevant command and inspect its result.
 - `npm run dev-nolog`: development server, configured for port 8080.
 - `npm run build-nolog`: Vite production build without the template logging script.
 - `./node_modules/.bin/tsc --noEmit -p tsconfig.json`: separate TypeScript check; establish its baseline before relying on it.
-- `node --test tests/exploration.test.mjs`: domain, collision, content, and persistence checks using Node's built-in runner (Node 22.18+ or Node 24+; no added dependencies).
+- `node --test tests/*.test.mjs`: domain, collision, content, persistence, and character-animation checks using Node's built-in runner (Node 22.18+ or Node 24+; no added dependencies).
 
 The regular `dev` and `build` scripts also exist and invoke `log.js`. There is currently no test or lint script and no dedicated test runner. Do not claim those checks ran or assume Vite performs type checking. Existing lint/configuration caveats are recorded in the architecture document; handle failures explicitly rather than silently changing tooling.
 

@@ -13,9 +13,17 @@ Status: implemented exploration slice plus the original inspected template basel
 
 All placeholder locations are synchronous and resident in memory. Portal commands validate a named destination, commit location/position together, and restart the shared scene with a short fade. There is no asynchronous asset-loading transition yet; introduce a prepare/commit phase before adding such loading.
 
-The test suite uses Node's built-in test runner and native TypeScript stripping: `node --test tests/exploration.test.mjs` (Node 22.18+ or Node 24+). No dependency or package-script change is needed. The template's absent package `type` declaration can produce a harmless Node module-detection warning; do not change module configuration just to suppress it.
+The test suite uses Node's built-in test runner and native TypeScript stripping: `node --test tests/*.test.mjs` (Node 22.18+ or Node 24+). No dependency or package-script change is needed. The template's absent package `type` declaration can produce a harmless Node module-detection warning; do not change module configuration just to suppress it.
 
 Current limits: desktop keyboard input, placeholder art, one local save per browser origin, no in-game save reset/recovery UI, abbreviated stair travel, and no case or inventory systems. An unreadable save starts a temporary unsaved session and remains untouched. Optional mouse world interactions, audio, mobile controls, and final story content are deferred.
+
+## Character animation
+
+`src/game/characters/animation.ts` owns a presentation-only idle/walk/special-idle controller; `PlayerVisual.ts` adapts it to a Phaser sprite or the existing placeholder geometry. `detective.ts` configures sheets, frame order/rates, visual origin/scale, mirroring, and optional idle timing. `spriteAssets.ts` handles preload and validates required textures before registering reusable game-global animations. The approved simplified V2 milestone uses one 2048 × 256 PNG with eight 256 × 256 cells: walk frames 0–6 at 8 FPS (redundant frame 7 omitted from the loop) and static frame 0 for idle, with no special idle. A scale of `162 / 220` and origin `(0.5, 240 / 256)` retain the prior visible height and floor anchor. `detectiveVariant` switches between this configuration and the preserved original detective without changing scene or loader logic. No per-frame offsets are configured. Required-asset failures still select the placeholder.
+
+The scene reports collision-resolved speed and facing to the controller while retaining its existing position/depth/camera updates. Animation state is not authoritative world state and is not persisted. `FOOT_RADIUS`, movement, interaction rules, named entries, dialogue, notebook, and autosave formats are unchanged. Blocking UI freezes visuals in idle; shutdown releases visual objects and their completion listeners.
+
+The active asset directory is `public/assets/characters/detective-v2/`; original assets remain in `public/assets/characters/detective/`. See [character-animation.md](character-animation.md) for the export contract, enablement steps, fallback matrix, and testing limits. The supplied artwork is used without modification.
 
 ## Inspected repository baseline
 

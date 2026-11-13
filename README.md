@@ -25,13 +25,15 @@ Progress saves locally in the same browser origin. Movement checkpoints occur ev
 
 ```sh
 ./node_modules/.bin/tsc --noEmit -p tsconfig.json
-node --test tests/exploration.test.mjs
+node --test tests/*.test.mjs
 npm run build-nolog
 ```
 
 Tests require Node 22.18+ or Node 24+ for native TypeScript support. A module-detection warning from the unchanged template package metadata is harmless. There is no separate installed test framework or lint script.
 
 The implementation uses structured content in `src/content/hotel.ts`, framework-independent rules in `src/core`, Phaser rendering/movement adapters, React UI in `src/ui`, and a local persistence adapter. See [game design](docs/game-design.md) and [architecture](docs/architecture.md) for boundaries and extension guidance.
+
+The approved Simplified Detective V2 is enabled: a seven-frame walking loop at 8 FPS and static frame-zero idle. The original detective assets and configuration remain available through the development configuration switch. The geometry placeholder remains the fallback for missing or invalid required sheets. See [the character animation asset contract](docs/character-animation.md) for configuration and known artwork issues.
 
 This is a placeholder exploration slice: no full case system, item collection, AI, backend, gambling, audio, or touch controls. The original template build configuration and dependencies are preserved.
 
