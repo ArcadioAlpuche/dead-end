@@ -1,3 +1,4 @@
+import { mockResponder } from './conversation/mockResponder.ts';
 import { hotel } from './content/hotel.ts';
 import { GameSession } from './core/session.ts';
 import { validateWorld } from './core/validation.ts';
@@ -10,7 +11,7 @@ let loaded: LoadResult = { warning: 'Local saving is unavailable in this browser
 try { storage = window.localStorage; loaded = loadLocal(storage, hotel); } catch { /* Browser denied storage access. */ }
 
 // One session survives React Strict Mode's lifecycle probe; Phaser holds no second copy.
-export const session = new GameSession(hotel, loaded.saved);
+export const session = new GameSession(hotel, loaded.saved, mockResponder);
 export const initialSaveWarning = loaded.warning;
 
 export function startSaving(reportWarning: (warning: string) => void): () => void {

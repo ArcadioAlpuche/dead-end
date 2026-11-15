@@ -54,9 +54,8 @@ h1 { margin: 1px 0 0; font-size: 36px; line-height: 1.1; font-weight: normal; le
 .empty-notes { color: #8b806b; font-style: italic; font-size: 13px; }
 .notebook-footnote { margin: 0; padding-top: 10px; color: #7c705b; font-size: 10px; }
 .dialogue-scrim { align-items: flex-end; padding: 35px; }
-.dialogue { padding: 28px 33px; background: #182126; border: 1px solid #a3895b; }
-.dialogue h2 { margin: 3px 0 15px; font-weight: normal; font-size: 26px; }
-.dialogue-text { font-size: 20px; line-height: 1.6; margin: 10px 0 24px; }
+.dialogue { max-height: 100%; display: flex; flex-direction: column; min-height: 0; padding: 18px 25px; background: #182126; border: 1px solid #a3895b; }
+.dialogue h2 { margin: 3px 0 8px; font-weight: normal; font-size: 26px; }
 .dialogue-actions { display: flex; justify-content: space-between; gap: 15px; align-items: center; }
 .dialogue-actions button { font-size: 12px; }
 .dialogue-actions kbd { margin-left: 8px; }
@@ -71,5 +70,15 @@ h1 { margin: 1px 0 0; font-size: 36px; line-height: 1.1; font-weight: normal; le
     .notebook { padding: 16px; }
     .notebook-pages { gap: 18px; }
     .notebook-pages > section + section { padding-left: 18px; }
-    .dialogue-text { font-size: 17px; }
 }
+
+.conversation-history { overflow-y: auto; min-height: 50px; flex: 1; overscroll-behavior: contain; }
+.conversation-history p { margin: 0 0 15px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.conversation-history strong { display: block; color: #bfa475; font: 10px/1.8 system-ui, sans-serif; }
+.dialogue form { flex-shrink: 0; }
+.dialogue label, .conversation-help, .conversation-status { font: 11px/1.5 system-ui, sans-serif; }
+.dialogue textarea { display: block; width: 100%; resize: none; margin-top: 6px; padding: 8px; font: 14px/1.4 Georgia, serif; color: #eee4cf; background: #0c141a; border: 1px solid #a3895b; }
+.dialogue textarea:focus-visible { outline: 2px solid #e5c482; }
+.conversation-help { color: #aaa897; margin: 5px 0; }
+.conversation-status { color: #d7bc8b; margin: 4px 0; }
+.conversation-status:empty { display: none; }

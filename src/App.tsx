@@ -17,7 +17,14 @@ function App() {
             if (event.ctrlKey || event.altKey || event.metaKey) return;
             const state = session.getSnapshot();
             const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-            const dialogueKey = state.conversation && (key === 'e' || key === 'Escape');
+            // Let the conversation own typing, repeats, Tab and Enter. Phaser input is disabled.
+            if (state.conversation) {
+                if (key === 'Escape' && !event.isComposing) {
+                    event.preventDefault(); event.stopImmediatePropagation();
+                    if (!event.repeat) session.closeDialogue();
+                }
+                return;
+            }
             const notebookKey = key === 'Tab' && !state.conversation;
             const closeNotebook = state.notebookOpen && key === 'Escape';
             if (state.notebookOpen && (key === 'ArrowUp' || key === 'ArrowDown')) {
@@ -27,12 +34,10 @@ function App() {
             }
             const blockedMovement = session.isBlocked() && (movementKeys.has(key) || key === 'e');
             const repeat = event.repeat && (movementKeys.has(key) || key === 'e');
-            if (dialogueKey || notebookKey || closeNotebook || blockedMovement || repeat) {
+            if (notebookKey || closeNotebook || blockedMovement || repeat) {
                 event.preventDefault(); event.stopImmediatePropagation();
                 if (event.repeat) return;
-                if (dialogueKey) {
-                    if (key === 'Escape') session.closeDialogue(); else session.advanceDialogue();
-                } else if (notebookKey || closeNotebook) session.toggleNotebook();
+                if (notebookKey || closeNotebook) session.toggleNotebook();
             }
         };
         // Capture prevents an E used to dismiss UI from reaching Phaser in the same event.

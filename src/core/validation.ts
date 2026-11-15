@@ -19,13 +19,16 @@ export function validateWorld(world: WorldDefinition): void {
                 }
             } else if (target.kind === 'examine' && !world.records[target.recordId]) {
                 throw new Error(`Missing record: ${target.id}`);
-            } else if (target.kind === 'talk' && !world.conversations[target.conversationId]?.length) {
+            } else if (target.kind === 'talk' && !Object.prototype.hasOwnProperty.call(world.conversations, target.conversationId)) {
                 throw new Error(`Missing conversation: ${target.id}`);
             }
         }
     }
-    for (const lines of Object.values(world.conversations)) {
-        for (const line of lines) {
+    const npcIds = new Set<string>();
+    for (const conversation of Object.values(world.conversations)) {
+        if (!conversation.npcId || npcIds.has(conversation.npcId)) throw new Error('Missing or duplicate NPC ID');
+        npcIds.add(conversation.npcId);
+        for (const line of [conversation.account, conversation.room]) {
             if (line.recordId && !world.records[line.recordId]) throw new Error(`Missing dialogue record: ${line.recordId}`);
         }
     }
@@ -33,8 +36,8 @@ export function validateWorld(world: WorldDefinition): void {
 
 export function parseSave(value: unknown, world: WorldDefinition): SavedGame | null {
     if (!value || typeof value !== 'object') return null;
-    const data = value as Partial<SavedGame>;
-    if (data.version !== 1 || data.contentVersion !== 'bellweather-1' || !data.player || !Array.isArray(data.discoveries)) return null;
+    const data = value as Partial<Omit<SavedGame, 'version'>> & { version?: unknown };
+    if ((data.version !== 1 && data.version !== 2) || data.contentVersion !== 'bellweather-1' || !data.player || !Array.isArray(data.discoveries)) return null;
     const player = data.player;
     if (!Object.prototype.hasOwnProperty.call(world.locations, player.locationId) || (player.facing !== -1 && player.facing !== 1)) return null;
     if (typeof player.x !== 'number' || typeof player.y !== 'number' || !canStand(world.locations[player.locationId], player)) return null;
@@ -45,5 +48,19 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
             || typeof record.recordedAt !== 'number' || !Number.isFinite(record.recordedAt) || record.recordedAt < 0) return null;
         seen.add(record.id);
     }
-    return { version: 1, contentVersion: 'bellweather-1', player: { locationId: player.locationId, x: player.x, y: player.y, facing: player.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })) };
+    // V1 has no NPC memory. Never infer accusations from discoveries or dialogue text.
+    const memories = data.version === 1 ? [] : data.npcMemories;
+    if (!Array.isArray(memories)) return null;
+    const npcIds = new Set(Object.values(world.conversations).map(conversation => conversation.npcId));
+    const memoryKeys = new Set<string>();
+    for (const event of memories) {
+        if (!event || typeof event !== 'object' || event.kind !== 'accused'
+            || typeof event.npcId !== 'string' || !npcIds.has(event.npcId)
+            || typeof event.locationId !== 'string' || !Object.prototype.hasOwnProperty.call(world.locations, event.locationId)
+            || typeof event.recordedAt !== 'number' || !Number.isFinite(event.recordedAt) || event.recordedAt < 0) return null;
+        const key = `${event.npcId}:${event.kind}`;
+        if (memoryKeys.has(key)) return null;
+        memoryKeys.add(key);
+    }
+    return { version: 2, contentVersion: 'bellweather-1', player: { locationId: player.locationId, x: player.x, y: player.y, facing: player.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ kind: event.kind, npcId: event.npcId, locationId: event.locationId, recordedAt: event.recordedAt })) };
 }

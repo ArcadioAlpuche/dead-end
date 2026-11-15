@@ -2,6 +2,7 @@ import type { GameSession } from '../core/session.ts';
 import type { SavedGame, WorldDefinition } from '../core/model.ts';
 import { parseSave } from '../core/validation.ts';
 
+// Keep the original slot key: envelope version controls migration, not the key suffix.
 export const SAVE_KEY = 'dead-end.bellweather.v1';
 export interface SaveStorage { getItem(key: string): string | null; setItem(key: string, value: string): void }
 export interface LoadResult { saved?: SavedGame; warning: string; writable: boolean }

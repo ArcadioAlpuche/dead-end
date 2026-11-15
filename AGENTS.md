@@ -29,6 +29,7 @@ Dead End is a grounded, 1940s-inspired 2D noir detective adventure. Preserve dir
 - Case acceptance must not create clues or gate their discovery. Previously found evidence must remain available when a relevant case is accepted later.
 - Evidence acquisition must be idempotent. Physical possession, observation, testimony, verification, and deduction are distinct concepts.
 - Preserve attribution, uncertainty, and discovery versus claimed event time. A witness statement is not established truth; the notebook must not leak hidden solutions or prescribe the next action.
+- NPC conversations use free-form player text. Keep transcripts transient and significant NPC memory typed, core-owned, and versioned in saves. Mock or future AI response adapters return presentation text, never authoritative memory/evidence mutations.
 - Keep authored case facts and solutions authoritative. Any future AI dialogue is optional presentation constrained by deterministic rules, never a source of new canon or direct state mutations.
 - Validate door destinations, return paths, floor levels, and arrival spawns. Do not use scene transitions to conceal inconsistent floor plans.
 - Apply the same proximity and access checks to keyboard and optional mouse interactions. Blocking UI must suppress world input.

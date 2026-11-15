@@ -13,13 +13,14 @@ npm run dev-nolog
 Open the local URL printed by Vite (normally `http://localhost:8080`). Use a desktop browser and keyboard.
 
 - **WASD / arrows:** move across the floor and its shallow depth.
-- **E:** interact with the nearby highlighted target; advance dialogue.
+- **E:** interact with the nearby highlighted target.
+- **Enter:** send a typed NPC message; **Shift+Enter:** new line. Try asking about last night or Room 407. The exact statement “I accuse you.” demonstrates persistent NPC memory.
 - **Tab:** open/close the notebook. **Escape:** close the notebook or leave dialogue.
 - **Up / down in the notebook:** scroll notes.
 
 Explore the lobby, staircase, fourth-floor hallway, and unlocked Room 407. Speak to the receptionist and examine the champagne glass, folded note, and bed. Stair travel abbreviates three flights. The notebook separates direct observations from unverified testimony. Exploration never requires a case.
 
-Progress saves locally in the same browser origin. Movement checkpoints occur every two seconds; discoveries and completed transitions save immediately. Unreadable saves are preserved, with an unsaved playable session and a visible notice. There is no in-game reset/recovery UI yet. `localhost` and `127.0.0.1` have separate saves.
+Progress saves locally in the same browser origin. Movement checkpoints occur every two seconds; discoveries, significant NPC memories, and completed transitions save immediately. Existing v1 saves migrate to v2 while retaining position and discovery timestamps. Conversation transcripts are temporary and clear on exit/reload. Unreadable saves are preserved, with an unsaved playable session and a visible notice. There is no in-game reset/recovery UI yet. `localhost` and `127.0.0.1` have separate saves.
 
 ## Verify
 
