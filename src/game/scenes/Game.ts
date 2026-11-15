@@ -38,6 +38,7 @@ export class Game extends Scene {
         const clearInput = () => { keyboard.resetKeys(); this.motion.vx = 0; this.motion.vy = 0; };
         clearInput();
         let blocked = session.isBlocked();
+        keyboard.enabled = !blocked;
         const sync = () => {
             const view = session.getSnapshot();
             if (view.locationId !== this.locationId && !this.transitioning) {
@@ -47,6 +48,7 @@ export class Game extends Scene {
                 return;
             }
             if (blocked !== session.isBlocked()) { clearInput(); blocked = session.isBlocked(); }
+            keyboard.enabled = !blocked; // Keep scene input inactive while React owns focus.
             this.marker.setVisible(!!view.nearby && !blocked);
             if (view.nearby) this.marker.setPosition(view.nearby.x, view.nearby.y + 8);
         };
@@ -63,6 +65,7 @@ export class Game extends Scene {
         window.addEventListener('blur', clearInput);
         document.addEventListener('visibilitychange', clearInput);
         this.events.once('shutdown', () => {
+            keyboard.enabled = true;
             unsubscribe(); clearInput(); keyboard.off('keydown-E', interact);
             window.removeEventListener('blur', clearInput);
             document.removeEventListener('visibilitychange', clearInput);

@@ -1,4 +1,6 @@
-import type { Discovery, Entry, Interaction, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
+import type { Discovery, Entry, Interaction, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
+import { classifyMessage, MAX_HISTORY_LINES, MAX_MESSAGE_LENGTH } from './conversation.ts';
+import type { ConversationResponder } from './conversation.ts';
 import { canStand, distance, INTERACTION_RADIUS } from './spatial.ts';
 
 export class GameSession {
@@ -6,10 +8,15 @@ export class GameSession {
     private player: Player;
     private discoveries: readonly Discovery[];
     private view: ViewState;
+    private npcMemories: readonly NpcMemoryEvent[];
+    private requestGeneration = 0;
+    private readonly responder: ConversationResponder;
     private readonly listeners = new Set<() => void>();
 
-    constructor(world: WorldDefinition, saved?: SavedGame) {
+    constructor(world: WorldDefinition, saved?: SavedGame, responder?: ConversationResponder) {
         this.world = world;
+        this.responder = responder ?? { async respond() { throw new Error('No conversation responder configured'); } };
+        this.npcMemories = saved?.npcMemories ?? [];
         this.player = saved?.player ?? { locationId: 'lobby', ...world.locations.lobby.entries.arrival };
         this.discoveries = saved?.discoveries ?? [];
         this.view = {
@@ -28,7 +35,7 @@ export class GameSession {
     getPlayer(): Player { return this.player; }
     isBlocked(): boolean { return this.view.notebookOpen || this.view.conversation !== null; }
     getSave(): SavedGame {
-        return { version: 1, contentVersion: 'bellweather-1', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })) };
+        return { version: 2, contentVersion: 'bellweather-1', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
     }
     private publish(patch: Partial<ViewState>): void {
         this.view = { ...this.view, ...patch };
@@ -76,22 +83,54 @@ export class GameSession {
             this.discover(target.recordId);
             this.publish({ message: this.world.records[target.recordId].text });
         } else {
-            this.showLine(target.conversationId, 0);
+            const definition = this.world.conversations[target.conversationId];
+            const remembers = this.npcMemories.some(event => event.npcId === definition.npcId);
+            this.publish({ conversation: {
+                id: target.conversationId, name: definition.name, pending: false, error: '',
+                history: [{ speaker: definition.name, text: remembers
+                    ? definition.rememberedAccusationGreeting
+                    : definition.greeting }],
+            } });
         }
         return true;
     }
-    private showLine(id: string, lineIndex: number): void {
-        const line = this.world.conversations[id]?.[lineIndex];
-        if (!line) { this.publish({ conversation: null }); return; }
-        // First block input, then record only testimony actually shown to the player.
-        this.publish({ conversation: { id, lineIndex, line } });
-        if (line.recordId) this.discover(line.recordId);
-    }
-    advanceDialogue(): void {
+    async submitMessage(raw: string): Promise<boolean> {
         const conversation = this.view.conversation;
-        if (conversation) this.showLine(conversation.id, conversation.lineIndex + 1);
+        const text = raw.trim();
+        if (!conversation || conversation.pending || !text || text.length > MAX_MESSAGE_LENGTH) return false;
+        const definition = this.world.conversations[conversation.id];
+        const topic = classifyMessage(text);
+        // The player's explicit statement is remembered even if the response fails or they leave.
+        if (topic === 'accusation' && !this.npcMemories.some(event => event.npcId === definition.npcId && event.kind === 'accused')) {
+            this.npcMemories = [...this.npcMemories, { kind: 'accused', npcId: definition.npcId,
+                locationId: this.player.locationId, recordedAt: Date.now() }];
+        }
+        const history = [...conversation.history, { speaker: 'Detective', text }].slice(-MAX_HISTORY_LINES);
+        const generation = ++this.requestGeneration;
+        this.publish({ conversation: { ...conversation, history, pending: true, error: '' } });
+        try {
+            const response = await this.responder.respond({ npcId: definition.npcId, text, topic,
+                history: history.map(line => ({ speaker: line.speaker, text: line.text })),
+                memories: this.npcMemories.filter(event => event.npcId === definition.npcId).map(event => ({ ...event })) });
+            if (generation !== this.requestGeneration || !this.view.conversation) return true;
+            if (typeof response !== 'string' || !response.trim() || response.length > 4000) throw new Error('Invalid response');
+            // Only core-selected authored lines can grant knowledge. Adapter text is never evidence.
+            const authored = topic === 'account' ? definition.account : topic === 'room' ? definition.room : undefined;
+            const lines = [...history, { speaker: definition.name, text: response }, ...(authored ? [authored] : [])].slice(-MAX_HISTORY_LINES);
+            this.publish({ conversation: { ...conversation, history: lines, pending: false, error: '' } });
+            if (authored?.recordId) this.discover(authored.recordId);
+        } catch {
+            if (generation === this.requestGeneration && this.view.conversation) {
+                this.publish({ conversation: { ...conversation, history, pending: false,
+                    error: 'No reply received. You can send another message or leave.' } });
+            }
+        }
+        return true;
     }
-    closeDialogue(): void { if (this.view.conversation) this.publish({ conversation: null }); }
+    closeDialogue(): void {
+        ++this.requestGeneration; // A late reply must not enter a later conversation or grant testimony.
+        if (this.view.conversation) this.publish({ conversation: null });
+    }
     toggleNotebook(): void {
         if (!this.view.conversation) this.publish({ notebookOpen: !this.view.notebookOpen });
     }

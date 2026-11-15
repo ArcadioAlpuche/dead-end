@@ -1,6 +1,7 @@
 // Node 22.18+ runs these TypeScript modules directly; no test dependency is needed.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mockResponder } from '../src/conversation/mockResponder.ts';
 import { hotel } from '../src/content/hotel.ts';
 import { GameSession } from '../src/core/session.ts';
 import { parseSave, validateWorld } from '../src/core/validation.ts';
@@ -55,19 +56,19 @@ test('evidence is discoverable with no case and stays unique on repeat examinati
     assert.ok(session.getSnapshot().entries.every(e => e.kind === 'observation'));
 });
 
-test('testimony is recorded only when heard and remains attributed after repeating dialogue', () => {
-    const session = new GameSession(hotel);
+test('testimony is recorded only when heard and remains attributed after repeating dialogue', async () => {
+    const session = new GameSession(hotel, undefined, mockResponder);
     approach(session, 'receptionist');
     assert.equal(session.getSnapshot().entries.length, 0);
     session.closeDialogue();
     approach(session, 'receptionist');
-    session.advanceDialogue(); session.advanceDialogue();
+    await session.submitMessage('What did you see last night?');
     const testimony = session.getSnapshot().entries[0];
     assert.equal(testimony.kind, 'testimony');
     assert.match(testimony.source, /Receptionist/);
     assert.match(testimony.eventTime, /according to/);
     session.closeDialogue(); approach(session, 'receptionist');
-    session.advanceDialogue(); session.advanceDialogue();
+    await session.submitMessage('What did you see last night?');
     assert.equal(session.getSnapshot().entries.length, 1);
 });
 
@@ -109,9 +110,9 @@ test('resolved movement avoids per-frame React notifications when the nearby tar
     assert.equal(notifications, 0);
 });
 
-test('save round trip restores position and discoveries, without reopening transient UI', () => {
-    const session = new GameSession(hotel);
-    approach(session, 'receptionist'); session.advanceDialogue(); session.advanceDialogue(); session.closeDialogue();
+test('save round trip restores position and discoveries, without reopening transient UI', async () => {
+    const session = new GameSession(hotel, undefined, mockResponder);
+    approach(session, 'receptionist'); await session.submitMessage('What did you see last night?'); session.closeDialogue();
     toRoom(session); approach(session, 'glass'); session.toggleNotebook();
     const saved = parseSave(JSON.parse(JSON.stringify(session.getSave())), hotel);
     assert.ok(saved);
@@ -123,7 +124,7 @@ test('save round trip restores position and discoveries, without reopening trans
 
 test('invalid versions, missing records, duplicate evidence and unsafe saved positions are rejected', () => {
     const baseline = new GameSession(hotel).getSave();
-    const invalid = [null, {}, { ...baseline, version: 2 }, { ...baseline, contentVersion: 'other' },
+    const invalid = [null, {}, { ...baseline, version: 3 }, { ...baseline, contentVersion: 'other' },
         { ...baseline, player: { ...baseline.player, locationId: '__proto__' } },
         { ...baseline, player: { ...baseline.player, x: 600, y: 520 } },
         { ...baseline, discoveries: [{ id: 'missing', recordedAt: 1 }] },

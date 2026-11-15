@@ -80,12 +80,12 @@ export const hotel: WorldDefinition = {
         'receptionist-account': { id: 'receptionist-account', kind: 'testimony', title: 'The receptionist’s account', locationId: 'lobby', source: 'Receptionist · Conversation in the lobby', eventTime: 'Last night, around midnight — according to the receptionist', text: 'The receptionist says someone came down from the upper floors around midnight, carrying a coat. They did not see which room the person left. This account has not been verified.' },
     },
     conversations: {
-        reception: [
-            { speaker: 'Receptionist', text: 'Welcome to the Bellweather. The clock runs slow. The bill does not.' },
-            { speaker: 'Detective', text: 'I’ll try not to confuse the two. Anything unusual last night?' },
-            { speaker: 'Receptionist', text: 'Someone came down from upstairs around midnight, carrying a coat. I couldn’t tell you which room. That’s all I saw.', recordId: 'receptionist-account' },
-            { speaker: 'Receptionist', text: '407 is vacant and unlocked for inspection. Fourth floor, three flights up. Please leave everything where you find it.' },
-            { speaker: 'Detective', text: 'A hotel that charges extra for the view and makes you earn it. Naturally.' },
-        ],
+        reception: {
+            npcId: 'receptionist', name: 'Receptionist',
+            greeting: 'Welcome to the Bellweather. The clock runs slow. The bill does not.',
+            rememberedAccusationGreeting: 'I remember your accusation. What would you like to ask?',
+            account: { speaker: 'Receptionist', text: 'Someone came down from upstairs around midnight, carrying a coat. I couldn’t tell you which room. That’s all I saw.', recordId: 'receptionist-account' },
+            room: { speaker: 'Receptionist', text: '407 is vacant and unlocked for inspection. Fourth floor, three flights up. Please leave everything where you find it.' },
+        },
     },
 };

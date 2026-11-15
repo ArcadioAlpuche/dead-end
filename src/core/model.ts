@@ -17,6 +17,20 @@ export interface RecordDefinition {
 export interface Discovery { readonly id: string; readonly recordedAt: number }
 export interface KnowledgeRecord extends RecordDefinition { readonly recordedAt: number }
 export interface DialogueLine { readonly speaker: string; readonly text: string; readonly recordId?: string }
+export interface ConversationDefinition {
+    readonly npcId: string;
+    readonly name: string;
+    readonly greeting: string;
+    readonly rememberedAccusationGreeting: string;
+    readonly account: DialogueLine;
+    readonly room: DialogueLine;
+}
+export interface NpcMemoryEvent {
+    readonly kind: 'accused';
+    readonly npcId: string;
+    readonly locationId: LocationId;
+    readonly recordedAt: number;
+}
 
 interface InteractionBase extends Point { readonly id: string; readonly label: string }
 export type Interaction = InteractionBase & (
@@ -45,15 +59,22 @@ export interface LocationDefinition {
 export interface WorldDefinition {
     readonly locations: Readonly<Record<LocationId, LocationDefinition>>;
     readonly records: Readonly<Record<string, RecordDefinition>>;
-    readonly conversations: Readonly<Record<string, readonly DialogueLine[]>>;
+    readonly conversations: Readonly<Record<string, ConversationDefinition>>;
 }
 export interface SavedGame {
-    readonly version: 1;
+    readonly version: 2;
     readonly contentVersion: 'bellweather-1';
     readonly player: Player;
     readonly discoveries: readonly Discovery[];
+    readonly npcMemories: readonly NpcMemoryEvent[];
 }
-export interface Conversation { readonly id: string; readonly lineIndex: number; readonly line: DialogueLine }
+export interface Conversation {
+    readonly id: string;
+    readonly name: string;
+    readonly history: readonly DialogueLine[];
+    readonly pending: boolean;
+    readonly error: string;
+}
 export interface ViewState {
     readonly locationId: LocationId;
     readonly nearby: Interaction | null;
