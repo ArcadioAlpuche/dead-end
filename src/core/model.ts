@@ -83,6 +83,7 @@ export interface Prop extends Rect {
 export interface LocationDefinition {
     readonly id: LocationId;
     readonly presentation?: 'overworld';
+    readonly height?: number;
     readonly name: string;
     readonly subtitle: string;
     readonly floor: string;

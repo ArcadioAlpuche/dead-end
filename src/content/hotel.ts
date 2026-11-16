@@ -1,19 +1,20 @@
 import type { WorldDefinition } from '../core/model.ts';
 import { cases } from './cases.ts';
 import { npcConversations } from './npcs.ts';
+import { bellweatherEntrance, townBuildings } from './townLayout.ts';
 
 // Prototype story details are deliberately observations and attributed claims, not a case solution.
 export const hotel: WorldDefinition = {
     cases,
     locations: {
         town: {
-            id: 'town', presentation: 'overworld', name: 'Bellweather block', subtitle: 'TOWN EXTERIOR · PROTOTYPE', floor: 'STREET LEVEL', width: 1600,
-            walkBounds: { x: 30, y: 420, width: 1540, height: 255 },
-            entries: { arrival: { x: 260, y: 565, facing: 1 }, fromHotel: { x: 820, y: 565, facing: 1 } },
-            obstacles: [{ x: 449, y: 448, width: 22, height: 28 }, { x: 1249, y: 448, width: 22, height: 28 }],
+            id: 'town', presentation: 'overworld', name: 'Bellweather block', subtitle: 'TOWN EXTERIOR · PROTOTYPE', floor: 'STREET LEVEL', width: 1600, height: 1200,
+            walkBounds: { x: 30, y: 230, width: 1540, height: 920 },
+            entries: { arrival: { x: 260, y: 590, facing: 1 }, fromHotel: { x: 825, y: 630, facing: 1 } },
+            obstacles: townBuildings.map(building => building.footprint),
             props: [],
             interactions: [
-                { id: 'town-hotel', kind: 'exit', label: 'Enter the Bellweather Hotel', x: 820, y: 455, destination: 'lobby', entry: 'fromTown' },
+                { id: 'town-hotel', kind: 'exit', label: 'Enter the Bellweather Hotel', ...bellweatherEntrance, destination: 'lobby', entry: 'fromTown' },
             ],
         },
         lobby: {

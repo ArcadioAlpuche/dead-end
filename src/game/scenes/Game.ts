@@ -33,9 +33,10 @@ export class Game extends Scene {
         this.detective.setPosition(player.x, player.y).setDepth(player.y);
         this.playerVisual.update({ speed: 0, facing: player.facing, deltaMs: 0, paused: session.isBlocked() });
         this.marker = this.add.ellipse(0, 0, overworld ? 40 : 58, 18).setStrokeStyle(2, 0xd3b77c, 0.85).setDepth(498);
-        this.cameras.main.setBounds(0, 0, location.width, 768);
-        this.cameras.main.startFollow(this.detective, true, 0.12, 1);
-        this.cameras.main.centerOn(player.x, 384);
+        this.cameras.main.setZoom(overworld ? 0.82 : 1);
+        this.cameras.main.setBounds(0, 0, location.width, location.height ?? 768);
+        this.cameras.main.startFollow(this.detective, true, 0.12, overworld ? 0.12 : 1, 0, overworld ? 160 : 0);
+        this.cameras.main.centerOn(player.x, overworld ? player.y - 160 : 384);
         this.cameras.main.fadeIn(220, 12, 20, 26);
         const keyboard = this.input.keyboard!;
         this.keys = keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,E') as Record<string, Input.Keyboard.Key>;

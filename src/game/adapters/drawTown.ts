@@ -1,51 +1,74 @@
 import type { Scene } from 'phaser';
 import type { LocationDefinition } from '../../core/model.ts';
+import { bellweatherEntrance, townBuildings } from '../../content/townLayout.ts';
+import type { TownBuilding } from '../../content/townLayout.ts';
 
-/** Small, untextured three-quarter-view block. Coordinates match the walk bounds. */
+function drawBuilding(scene: Scene, building: TownBuilding): void {
+    const { x, y, width, height } = building.footprint;
+    const bottom = y + height;
+    const top = y - building.wallHeight;
+    const sideWidth = 38;
+    const frontWidth = width - sideWidth;
+    const g = scene.add.graphics().setDepth(bottom);
+    g.fillStyle(0x101b1d, 0.35).fillEllipse(x + width / 2, bottom + 7, width + 28, 32);
+    g.fillStyle(building.front).fillRect(x, top, frontWidth, bottom - top);
+    g.fillStyle(building.side).fillTriangle(x + frontWidth, top, x + width, top - 29, x + width, bottom - 26)
+        .fillTriangle(x + frontWidth, top, x + width, bottom - 26, x + frontWidth, bottom);
+    g.fillStyle(0x253138).fillTriangle(x - 11, top, x + 25, top - 29, x + width, top - 29)
+        .fillTriangle(x - 11, top, x + width, top - 29, x + frontWidth, top);
+    g.lineStyle(2, 0x9d967d, 0.3).lineBetween(x, bottom, x + frontWidth, bottom);
+
+    const windows = building.hotel ? [x + 40, x + frontWidth - 82] : [x + 30, x + frontWidth - 70];
+    for (const wx of windows) for (const wy of [top + 68, top + 142]) {
+        if (wy + 37 >= bottom - 105) continue;
+        g.fillStyle(0x1b3037).fillRect(wx, wy, 38, 37);
+        g.lineStyle(2, 0xa9a084, 0.7).strokeRect(wx, wy, 38, 37);
+        g.lineBetween(wx + 19, wy, wx + 19, wy + 37);
+    }
+    if (building.hotel) {
+        const doorCenter = bellweatherEntrance.x;
+        g.fillStyle(0x19242a).fillRect(doorCenter - 33, bottom - 106, 66, 106);
+        g.fillStyle(0x584636).fillRect(doorCenter - 27, bottom - 99, 54, 99);
+        g.fillStyle(0xb9a471).fillCircle(doorCenter + 17, bottom - 45, 3);
+        g.fillStyle(0x9b907a).fillTriangle(doorCenter - 37, bottom, doorCenter + 37, bottom, doorCenter + 68, bottom + 28)
+            .fillTriangle(doorCenter - 37, bottom, doorCenter + 68, bottom + 28, doorCenter - 65, bottom + 28);
+        scene.add.text(bellweatherEntrance.x, top + 39, 'BELLWEATHER HOTEL', {
+            fontFamily: 'Georgia, serif', fontSize: '18px', color: '#e0d0a8',
+        }).setOrigin(0.5).setDepth(bottom + 1);
+    }
+}
+
+/** Elevated block with staggered footprints and connected streets on a tall map. */
 export function drawTown(scene: Scene, location: LocationDefinition): void {
-    const g = scene.add.graphics();
     const w = location.width;
-    g.fillStyle(0x1b2a32).fillRect(0, 0, w, 430);
-    g.fillStyle(0x34464a).fillTriangle(0, 310, w, 250, w, 430).fillTriangle(0, 310, w, 430, 0, 430);
-    for (let x = 35; x < w; x += 195) {
-        g.fillStyle(0x15242b).fillRect(x, 230 + x % 55, 140, 200);
-        g.fillStyle(0x41545a).fillTriangle(x, 230 + x % 55, x + 140, 230 + x % 55, x + 175, 205 + x % 55);
-        g.fillStyle(0x0b171e).fillRect(x + 25, 335, 42, 65).fillRect(x + 88, 335, 42, 65);
+    const h = location.height ?? 768;
+    const g = scene.add.graphics().setDepth(-1000);
+    g.fillStyle(0x34423d).fillRect(0, 0, w, h);
+    g.fillStyle(0x414f49).fillRect(0, 185, w, 375);
+    g.fillStyle(0x303e43).fillRect(415, 0, 145, 750).fillRect(1060, 0, 135, 750);
+    g.fillStyle(0x303e43).fillRect(0, 560, w, 190).fillRect(500, 750, 540, h - 750);
+    g.fillStyle(0x7a7e70).fillRect(0, 520, w, 40).fillRect(0, 750, w, 45);
+    g.fillRect(375, 0, 40, 560).fillRect(560, 0, 42, 560);
+    g.fillRect(1020, 0, 40, 560).fillRect(1195, 0, 38, 560);
+    g.fillRect(455, 750, 45, h - 750).fillRect(1040, 750, 45, h - 750);
+    g.lineStyle(2, 0xa4a58b, 0.35);
+    for (let x = 0; x < w; x += 120) {
+        g.lineBetween(x, 520, x - 28, 560);
+        g.lineBetween(x, 750, x - 24, 795);
     }
-    g.fillStyle(0x68716b).fillRect(0, 430, w, 125);
-    g.fillStyle(0x9a9681).fillTriangle(0, 430, w, 430, w, 445).fillTriangle(0, 430, w, 445, 0, 445);
-    g.lineStyle(2, 0x4e5854, 0.65);
-    for (let x = 0; x < w; x += 130) g.lineBetween(x, 445, x - 36, 555);
-    g.fillStyle(0x252f36).fillRect(0, 555, w, 213);
-    g.lineStyle(3, 0xb7a47a, 0.5);
-    for (let x = 65; x < w; x += 165) g.lineBetween(x, 663, x + 86, 663);
+    for (let y = 0; y < h; y += 112) {
+        g.lineBetween(375, y, 415, y - 20);
+        g.lineBetween(1040, y, 1085, y - 20);
+    }
+    g.lineStyle(3, 0xb6aa82, 0.4);
+    for (let x = 70; x < w; x += 175) g.lineBetween(x, 655, x + 83, 655);
+    for (let y = 815; y < h; y += 155) g.lineBetween(770, y, 770, y + 75);
+    // A paved open court provides room to travel around the lower building row.
+    g.fillStyle(0x68746b).fillEllipse(770, 900, 300, 190);
+    g.lineStyle(2, 0xaab09a, 0.45).strokeEllipse(770, 900, 300, 190);
 
-    // Bellweather facade: front, shaded right wall, sloping roof and recessed entry.
-    g.fillStyle(0x584f48).fillRect(690, 190, 270, 248);
-    g.fillStyle(0x343a3a).fillTriangle(960, 190, 1035, 155, 1035, 400)
-        .fillTriangle(960, 190, 1035, 400, 960, 438);
-    g.fillStyle(0x242d32).fillTriangle(675, 190, 750, 153, 1035, 153)
-        .fillTriangle(675, 190, 1035, 153, 960, 190);
-    g.fillStyle(0x1a252b).fillRect(805, 325, 66, 113);
-    g.fillStyle(0x604d3a).fillRect(810, 334, 55, 104);
-    g.fillStyle(0xa28e61).fillRect(854, 389, 5, 5);
-    for (const x of [720, 900]) for (const y of [230, 301]) {
-        g.fillStyle(0x172b32).fillRect(x, y, 42, 45);
-        g.lineStyle(2, 0xb59d6b, 0.6).strokeRect(x, y, 42, 45);
-        g.lineBetween(x + 21, y, x + 21, y + 45);
-    }
-    g.fillStyle(0x918775).fillTriangle(805, 438, 871, 438, 898, 465)
-        .fillTriangle(805, 438, 898, 465, 780, 465);
-    scene.add.text(825, 204, 'BELLWEATHER HOTEL', {
-        fontFamily: 'Georgia, serif', fontSize: '17px', color: '#e1d4ad',
-    }).setOrigin(0.5);
-
-    for (const x of [460, 1260]) {
-        g.fillStyle(0x0d171c).fillRect(x - 4, 350, 8, 122);
-        g.fillStyle(0xc8b27c).fillEllipse(x, 348, 21, 27);
-        g.fillStyle(0x293139).fillRect(x - 13, 464, 26, 10);
-    }
+    for (const building of townBuildings) drawBuilding(scene, building);
     for (const target of location.interactions) {
-        scene.add.circle(target.x, target.y + 8, 3, 0xd1ba85, 0.8).setDepth(499);
+        scene.add.circle(target.x, target.y + 8, 3, 0xd1ba85, 0.8).setDepth(target.y + 1);
     }
 }

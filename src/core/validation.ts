@@ -11,6 +11,19 @@ export function validateWorld(world: WorldDefinition): void {
     }
     const ids = new Set<string>();
     for (const location of Object.values(world.locations)) {
+        const height = location.height ?? 768;
+        const bounds = location.walkBounds;
+        if (!Number.isFinite(height) || height < 768 || !Number.isFinite(location.width) || location.width < 1024
+            || bounds.x < 0 || bounds.y < 0 || bounds.width <= 0 || bounds.height <= 0
+            || bounds.x + bounds.width > location.width || bounds.y + bounds.height > height) {
+            throw new Error(`Invalid world bounds: ${location.id}`);
+        }
+        for (const obstacle of location.obstacles) {
+            if (obstacle.width <= 0 || obstacle.height <= 0 || obstacle.x < 0 || obstacle.y < 0
+                || obstacle.x + obstacle.width > location.width || obstacle.y + obstacle.height > height) {
+                throw new Error(`Invalid obstacle: ${location.id}`);
+            }
+        }
         for (const [name, entry] of Object.entries(location.entries)) {
             if (!canStand(location, entry)) throw new Error(`Unsafe entry: ${location.id}/${name}`);
         }

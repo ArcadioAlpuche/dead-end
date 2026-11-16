@@ -5,6 +5,8 @@ import { GameSession } from '../src/core/session.ts';
 import { validateWorld, parseSave } from '../src/core/validation.ts';
 import { loadLocal, saveLocal } from '../src/persistence/localSave.ts';
 import { INTERIOR_MOVEMENT, OVERWORLD_MOVEMENT, stepMovement } from '../src/game/adapters/movement.ts';
+import { canStand } from '../src/core/spatial.ts';
+import { townBuildings } from '../src/content/townLayout.ts';
 
 function use(session, id) {
     const target = hotel.locations[session.getPlayer().locationId].interactions.find(item => item.id === id);
@@ -77,4 +79,56 @@ test('interior movement keeps its prior defaults while overworld tuning is separ
     const town = hotel.locations.town;
     const moved = stepMovement(town, town.entries.arrival, { vx: 0, vy: 0 }, 1, 1, 1 / 60, OVERWORLD_MOVEMENT);
     assert.ok(moved.x > town.entries.arrival.x && moved.y > town.entries.arrival.y);
+});
+
+test('staggered footprints match collision and leave a route around a lower building', () => {
+    const town = hotel.locations.town;
+    assert.equal(town.height, 1200);
+    assert.deepEqual(town.obstacles, townBuildings.map(building => building.footprint));
+    assert.ok(new Set(townBuildings.map(building => building.footprint.y)).size > 2);
+    const footprint = townBuildings[3].footprint;
+    assert.equal(canStand(town, { x: footprint.x + 40, y: footprint.y + 40 }), false);
+    let position = { x: 140, y: 850, facing: 1 };
+    const motion = { vx: 0, vy: 0 };
+    for (let i = 0; i < 90; i++) position = stepMovement(town, position, motion, 1, 0, 1 / 60, OVERWORLD_MOVEMENT);
+    assert.ok(position.x < footprint.x, 'the building blocks direct horizontal travel');
+    for (const [axisX, axisY, frames] of [[0, -1, 110], [1, 0, 105], [0, 1, 170], [-1, 0, 105]]) {
+        for (let i = 0; i < frames; i++) {
+            position = stepMovement(town, position, motion, axisX, axisY, 1 / 60, OVERWORLD_MOVEMENT);
+            assert.ok(canStand(town, position));
+        }
+    }
+    assert.ok(position.y > footprint.y + footprint.height, 'Kane can circle the building vertically');
+});
+
+test('positions from the previous exterior walk strip remain loadable', () => {
+    const base = new GameSession(hotel).getSave();
+    for (const point of [{ x: 260, y: 565 }, { x: 820, y: 455 }, { x: 820, y: 565 }, { x: 1250, y: 600 }]) {
+        const save = { ...base, player: { locationId: 'town', ...point, facing: 1 } };
+        assert.deepEqual(parseSave(save, hotel)?.player, save.player);
+    }
+});
+
+test('hotel entrance sits below its blocked facade and can be reached from the street', () => {
+    const town = hotel.locations.town;
+    const building = townBuildings.find(item => item.hotel).footprint;
+    const entrance = town.interactions.find(item => item.id === 'town-hotel');
+    assert.equal(entrance.x, 825);
+    assert.equal(entrance.y, building.y + building.height + 55);
+    assert.equal(canStand(town, entrance), true);
+    assert.equal(canStand(town, { x: entrance.x, y: building.y + building.height - 20 }), false);
+    const session = new GameSession(hotel);
+    use(session, 'lobby-town');
+    const motion = { vx: 0, vy: 0 };
+    for (let i = 0; i < 70; i++) {
+        assert.ok(session.moveTo(stepMovement(town, session.getPlayer(), motion, 0, -1, 1 / 60, OVERWORLD_MOVEMENT)));
+    }
+    assert.equal(session.getSnapshot().nearby?.id, 'town-hotel');
+    assert.ok(session.interact('town-hotel'));
+    assert.equal(session.getPlayer().locationId, 'lobby');
+});
+
+test('world validation rejects a town height that clips walkable ground', () => {
+    const world = { ...hotel, locations: { ...hotel.locations, town: { ...hotel.locations.town, height: 768 } } };
+    assert.throws(() => validateWorld(world), /Invalid world bounds/);
 });
