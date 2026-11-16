@@ -1,7 +1,13 @@
 import type { SavedGame, WorldDefinition } from './model.ts';
+import { parseCaseStates } from './cases.ts';
 import { canStand } from './spatial.ts';
 
 export function validateWorld(world: WorldDefinition): void {
+    for (const [id, definition] of Object.entries(world.cases)) {
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) || id === 'constructor' || id === 'prototype'
+            || definition.id !== id || !definition.title.trim() || !definition.client.trim()
+            || !definition.offer.trim() || !definition.assignment.trim()) throw new Error(`Invalid case definition: ${id}`);
+    }
     const ids = new Set<string>();
     for (const location of Object.values(world.locations)) {
         for (const [name, entry] of Object.entries(location.entries)) {
@@ -37,7 +43,7 @@ export function validateWorld(world: WorldDefinition): void {
 export function parseSave(value: unknown, world: WorldDefinition): SavedGame | null {
     if (!value || typeof value !== 'object') return null;
     const data = value as Partial<Omit<SavedGame, 'version'>> & { version?: unknown };
-    if ((data.version !== 1 && data.version !== 2) || data.contentVersion !== 'bellweather-1' || !data.player || !Array.isArray(data.discoveries)) return null;
+    if ((data.version !== 1 && data.version !== 2 && data.version !== 3) || data.contentVersion !== 'bellweather-1' || !data.player || !Array.isArray(data.discoveries)) return null;
     const player = data.player;
     if (!Object.prototype.hasOwnProperty.call(world.locations, player.locationId) || (player.facing !== -1 && player.facing !== 1)) return null;
     if (typeof player.x !== 'number' || typeof player.y !== 'number' || !canStand(world.locations[player.locationId], player)) return null;
@@ -62,5 +68,8 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
         if (memoryKeys.has(key)) return null;
         memoryKeys.add(key);
     }
-    return { version: 2, contentVersion: 'bellweather-1', player: { locationId: player.locationId, x: player.x, y: player.y, facing: player.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ kind: event.kind, npcId: event.npcId, locationId: event.locationId, recordedAt: event.recordedAt })) };
+    // V1/v2 never contained case acceptance. Do not infer it from existing discoveries or memory.
+    const cases = data.version === 3 ? parseCaseStates(data.cases, world.cases) : {};
+    if (!cases) return null;
+    return { version: 3, cases, contentVersion: 'bellweather-1', player: { locationId: player.locationId, x: player.x, y: player.y, facing: player.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ kind: event.kind, npcId: event.npcId, locationId: event.locationId, recordedAt: event.recordedAt })) };
 }

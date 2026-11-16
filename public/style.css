@@ -82,3 +82,15 @@ h1 { margin: 1px 0 0; font-size: 36px; line-height: 1.1; font-weight: normal; le
 .conversation-help { color: #aaa897; margin: 5px 0; }
 .conversation-status { color: #d7bc8b; margin: 4px 0; }
 .conversation-status:empty { display: none; }
+
+.casebook-pages { overflow-y: auto; min-height: 0; overscroll-behavior: contain; padding-right: 6px; }
+.casebook-pages .notebook-pages { overflow: visible; }
+.casebook-pages .record { color: inherit; }
+.case-entry { border-left: 2px solid #9c8c70; padding: 0 12px 12px; margin-bottom: 16px; }
+.case-entry h4, .case-offer h4 { margin: 8px 0; font-size: 18px; font-weight: normal; }
+.case-entry h5 { margin: 10px 0 4px; font-size: 12px; }
+.case-entry p, .case-offer p { font-size: 13px; line-height: 1.6; }
+.case-offer { padding: 16px 0; }
+.case-offer blockquote { margin: 14px 0; padding-left: 16px; border-left: 2px solid #9c8c70; font-size: 16px; line-height: 1.65; }
+.case-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.notebook .panel-heading, .notebook-footnote { flex-shrink: 0; }

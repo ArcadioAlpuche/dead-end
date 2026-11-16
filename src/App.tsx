@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { PhaserGame } from './PhaserGame';
 import { initialSaveWarning, session, startSaving } from './runtime';
 import { Notebook } from './ui/Notebook';
+import { casebookKeyAction, nextFocusIndex } from './ui/casebookInput';
 import { Dialogue } from './ui/Dialogue';
 
 const movementKeys = new Set(['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
@@ -25,19 +26,26 @@ function App() {
                 }
                 return;
             }
-            const notebookKey = key === 'Tab' && !state.conversation;
-            const closeNotebook = state.notebookOpen && key === 'Escape';
-            if (state.notebookOpen && (key === 'ArrowUp' || key === 'ArrowDown')) {
-                event.preventDefault(); event.stopImmediatePropagation();
-                document.getElementById('notebook-pages')?.scrollBy({ top: key === 'ArrowUp' ? -50 : 50 });
+            if (state.notebookOpen) {
+                const action = casebookKeyAction(event, state.caseOfferId !== null);
+                // Capture also prevents a closing Tab/Escape from reaching the world that same frame.
+                if (action !== 'native') {
+                    event.preventDefault(); event.stopImmediatePropagation();
+                    if (action === 'close') session.toggleNotebook();
+                    if (action === 'up' || action === 'down') {
+                        document.getElementById('notebook-pages')?.scrollBy({ top: action === 'up' ? -50 : 50 });
+                    }
+                    if (action === 'next' || action === 'previous') {
+                        const controls = Array.from(document.querySelectorAll<HTMLButtonElement>('#casebook-panel button:not(:disabled)'));
+                        controls[nextFocusIndex(controls.indexOf(document.activeElement as HTMLButtonElement), controls.length,
+                            action === 'next' ? 1 : -1)]?.focus();
+                    }
+                }
                 return;
             }
-            const blockedMovement = session.isBlocked() && (movementKeys.has(key) || key === 'e');
-            const repeat = event.repeat && (movementKeys.has(key) || key === 'e');
-            if (notebookKey || closeNotebook || blockedMovement || repeat) {
+            if (key === 'Tab' || (event.repeat && (movementKeys.has(key) || key === 'e'))) {
                 event.preventDefault(); event.stopImmediatePropagation();
-                if (event.repeat) return;
-                if (notebookKey || closeNotebook) session.toggleNotebook();
+                if (!event.repeat && key === 'Tab') session.toggleNotebook();
             }
         };
         // Capture prevents an E used to dismiss UI from reaching Phaser in the same event.
@@ -56,7 +64,7 @@ function App() {
                 <div className="world-hud">
                     <div><span className="eyebrow">{location.floor}</span><h2>{location.name}</h2></div>
                     <button className="notebook-button" onClick={() => session.toggleNotebook()} disabled={!!view.conversation} aria-keyshortcuts="Tab">
-                        <span>Notebook <span className="entry-count">{view.entries.length}</span></span><kbd>Tab</kbd>
+                        <span>Casebook <span className="entry-count">{view.entries.length}</span></span><kbd>Tab</kbd>
                     </button>
                 </div>
                 <div className="world-caption" aria-live="polite">
@@ -65,10 +73,10 @@ function App() {
                         : <p className="interaction quiet">{session.isBlocked() ? 'Investigation paused' : 'Walk closer to examine or speak'}</p>}
                     <p className="observation">{view.message}</p>
                 </div>
-                {view.notebookOpen && <Notebook entries={view.entries} />}
+                {view.notebookOpen && <Notebook entries={view.entries} cases={view.cases} offerId={view.caseOfferId} />}
                 {view.conversation && <Dialogue conversation={view.conversation} />}
             </section>
-            <footer className="controls"><span><kbd>WASD</kbd> / <kbd>↑ ↓ ← →</kbd> Move <i>·</i> <kbd>E</kbd> Interact <i>·</i> <kbd>Tab</kbd> Notebook</span><span>Local autosave · Keyboard play</span></footer>
+            <footer className="controls"><span><kbd>WASD</kbd> / <kbd>↑ ↓ ← →</kbd> Move <i>·</i> <kbd>E</kbd> Interact <i>·</i> <kbd>Tab</kbd> Casebook</span><span>Local autosave · Keyboard play</span></footer>
             {saveWarning && <p className="save-warning" role="status">{saveWarning}</p>}
         </main>
     );

@@ -31,6 +31,19 @@ export interface NpcMemoryEvent {
     readonly locationId: LocationId;
     readonly recordedAt: number;
 }
+export interface CaseDefinition {
+    readonly id: string;
+    readonly title: string;
+    readonly client: string;
+    readonly offer: string;
+    readonly assignment: string;
+}
+export interface CaseAcceptance { readonly kind: 'accepted'; readonly recordedAt: number }
+export interface CaseState {
+    readonly status: 'available' | 'active';
+    readonly history: readonly CaseAcceptance[];
+}
+export interface CasebookEntry extends CaseDefinition, CaseState {}
 
 interface InteractionBase extends Point { readonly id: string; readonly label: string }
 export type Interaction = InteractionBase & (
@@ -57,16 +70,18 @@ export interface LocationDefinition {
     readonly interactions: readonly Interaction[];
 }
 export interface WorldDefinition {
+    readonly cases: Readonly<Record<string, CaseDefinition>>;
     readonly locations: Readonly<Record<LocationId, LocationDefinition>>;
     readonly records: Readonly<Record<string, RecordDefinition>>;
     readonly conversations: Readonly<Record<string, ConversationDefinition>>;
 }
 export interface SavedGame {
-    readonly version: 2;
+    readonly version: 3;
     readonly contentVersion: 'bellweather-1';
     readonly player: Player;
     readonly discoveries: readonly Discovery[];
     readonly npcMemories: readonly NpcMemoryEvent[];
+    readonly cases: Readonly<Record<string, CaseState>>;
 }
 export interface Conversation {
     readonly id: string;
@@ -79,6 +94,8 @@ export interface ViewState {
     readonly locationId: LocationId;
     readonly nearby: Interaction | null;
     readonly notebookOpen: boolean;
+    readonly caseOfferId: string | null;
+    readonly cases: readonly CasebookEntry[];
     readonly conversation: Conversation | null;
     readonly entries: readonly KnowledgeRecord[];
     readonly message: string;

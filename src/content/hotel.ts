@@ -1,7 +1,9 @@
 import type { WorldDefinition } from '../core/model.ts';
+import { cases } from './cases.ts';
 
 // Prototype story details are deliberately observations and attributed claims, not a case solution.
 export const hotel: WorldDefinition = {
+    cases,
     locations: {
         lobby: {
             id: 'lobby', name: 'The lobby', subtitle: 'BELLWEATHER HOTEL', floor: 'GROUND FLOOR', width: 1320,

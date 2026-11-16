@@ -1,4 +1,5 @@
-import type { Discovery, Entry, Interaction, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
+import type { CaseState, Discovery, Entry, Interaction, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
+import { casebookEntries, copyCaseStates } from './cases.ts';
 import { classifyMessage, MAX_HISTORY_LINES, MAX_MESSAGE_LENGTH } from './conversation.ts';
 import type { ConversationResponder } from './conversation.ts';
 import { canStand, distance, INTERACTION_RADIUS } from './spatial.ts';
@@ -6,6 +7,7 @@ import { canStand, distance, INTERACTION_RADIUS } from './spatial.ts';
 export class GameSession {
     readonly world: WorldDefinition;
     private player: Player;
+    private cases: Readonly<Record<string, CaseState>>;
     private discoveries: readonly Discovery[];
     private view: ViewState;
     private npcMemories: readonly NpcMemoryEvent[];
@@ -15,12 +17,14 @@ export class GameSession {
 
     constructor(world: WorldDefinition, saved?: SavedGame, responder?: ConversationResponder) {
         this.world = world;
+        this.cases = copyCaseStates(saved?.cases ?? {});
         this.responder = responder ?? { async respond() { throw new Error('No conversation responder configured'); } };
         this.npcMemories = saved?.npcMemories ?? [];
         this.player = saved?.player ?? { locationId: 'lobby', ...world.locations.lobby.entries.arrival };
         this.discoveries = saved?.discoveries ?? [];
         this.view = {
             locationId: this.player.locationId, nearby: null, notebookOpen: false, conversation: null,
+            caseOfferId: null, cases: casebookEntries(world.cases, this.cases),
             entries: this.discoveries.map(d => ({ ...world.records[d.id], recordedAt: d.recordedAt })),
             message: 'The Bellweather. Better days available on request.',
         };
@@ -35,7 +39,7 @@ export class GameSession {
     getPlayer(): Player { return this.player; }
     isBlocked(): boolean { return this.view.notebookOpen || this.view.conversation !== null; }
     getSave(): SavedGame {
-        return { version: 2, contentVersion: 'bellweather-1', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
+        return { version: 3, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-1', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
     }
     private publish(patch: Partial<ViewState>): void {
         this.view = { ...this.view, ...patch };
@@ -131,7 +135,28 @@ export class GameSession {
         ++this.requestGeneration; // A late reply must not enter a later conversation or grant testimony.
         if (this.view.conversation) this.publish({ conversation: null });
     }
+    openCaseOffer(id: string): boolean {
+        if (!this.view.notebookOpen || this.view.conversation || !Object.prototype.hasOwnProperty.call(this.world.cases, id)
+            || this.cases[id]?.status === 'active') return false;
+        this.publish({ caseOfferId: id });
+        return true;
+    }
+    acceptCase(id: string): boolean {
+        if (!this.view.notebookOpen || this.view.conversation || !Object.prototype.hasOwnProperty.call(this.world.cases, id)) return false;
+        if (this.cases[id]?.status === 'active') return true; // Repeated clicks preserve the original acceptance.
+        if (this.view.caseOfferId !== id) return false;
+        this.cases = { ...this.cases, [id]: { status: 'active', history: [{ kind: 'accepted', recordedAt: Date.now() }] } };
+        this.publish({ cases: casebookEntries(this.world.cases, this.cases), caseOfferId: null,
+            message: 'Assignment accepted. Recorded in the casebook.' });
+        return true;
+    }
+    deferCase(id: string): boolean {
+        if (!this.view.notebookOpen || this.view.caseOfferId !== id || this.cases[id]?.status === 'active') return false;
+        // Deferral is not withdrawal. No durable change; this offer remains available.
+        this.publish({ notebookOpen: false, caseOfferId: null });
+        return true;
+    }
     toggleNotebook(): void {
-        if (!this.view.conversation) this.publish({ notebookOpen: !this.view.notebookOpen });
+        if (!this.view.conversation) this.publish({ notebookOpen: !this.view.notebookOpen, caseOfferId: null });
     }
 }

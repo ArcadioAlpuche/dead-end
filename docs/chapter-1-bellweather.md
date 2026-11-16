@@ -1,6 +1,12 @@
 # Chapter 1 — The Guest in Room 407
 
-**Author-facing spoilers.** Planning only. The player-facing casebook must not receive this document's hidden truth. See the [game design](game-design.md) for world rules and the [implementation plan](chapter-1-implementation-plan.md) for technical milestones.
+**Author-facing spoilers.** Future chapter content remains planning; only the public M1 assignment offer/acceptance is implemented. The player-facing casebook must not receive this document's hidden truth. See the [game design](game-design.md) for world rules and the [implementation plan](chapter-1-implementation-plan.md) for technical milestones.
+
+## M1 implementation and remaining approvals
+
+M1 presents Evelyn's public missing-brother request inside the existing casebook, with explicit Accept and Defer. It introduces no office, refuge, new evidence, case outcomes, or new NPC dialogue. The request is labeled as her unverified account; acceptance records history without interpreting field notes. Players can still explore all four hotel spaces first.
+
+Proposed evidence placement and the withdrawal checkpoint mechanism below remain unapproved. The long-term preference is in-world case reopening rather than rewinding a save. Checkpoint descriptions are retained as an alternative for later review, not as a requirement or approved design.
 
 ## Established decisions and proposed connective details
 

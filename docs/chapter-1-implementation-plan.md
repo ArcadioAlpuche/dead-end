@@ -1,6 +1,6 @@
 # Chapter 1 — Architecture Assessment and Implementation Plan
 
-Documentation only, November 15, 2026. No milestone below is implemented by this task. Read the [game design](game-design.md) and [Chapter 1 content proposal](chapter-1-bellweather.md) together before approving work. The existing [architecture document](architecture.md) describes the current system; this file records how to extend it without replacing the scaffold.
+Planning baseline November 15, 2026, updated for M1 implementation. **M1 only is approved and implemented on `feat/chapter-1-foundation`; M2 and later remain proposals.** Read the [game design](game-design.md) and [Chapter 1 content proposal](chapter-1-bellweather.md) together before approving work. The existing [architecture document](architecture.md) describes the current system; this file records how to extend it without replacing the scaffold.
 
 ## Repository preparation and inspected baseline
 
@@ -10,7 +10,9 @@ Installed dependencies were inspected with `npm ls --depth=0`: Phaser 4.0.0, Rea
 
 Source reviewed: `src/content/hotel.ts`, `src/core/{model,session,validation,conversation,spatial}.ts`, `src/conversation/mockResponder.ts`, `src/ui/{Dialogue,Notebook}.tsx`, input routing, runtime/persistence, Phaser room rendering/movement/animation integration, Vite configuration and the exploration/conversation/animation tests. Current tests cover 41 scenarios: 11 exploration, 10 conversation and 20 animation. This is an inspected coverage inventory, not a claim that tests were rerun during documentation planning.
 
-## Capability assessment
+## Capability assessment at the planning baseline
+
+The table below describes the pre-M1 repository. See the M1 implementation note and [architecture](architecture.md) for current casebook and v3 save support.
 
 | Capability | Current support | Proposed smallest extension / classification |
 | --- | --- | --- |
@@ -56,7 +58,7 @@ Critical limitation to address before A/B: the existing adapter receives the pla
 
 ### Saves and compatibility
 
-The first durable case extension needs a new schema, provisionally v3. Migrate v1 through the existing v2 shape and then add empty case/world/progression collections. Preserve player coordinates/facing, discovery IDs/timestamps and NPC events exactly. Do not turn an old `receptionist-account` into Daniel's positive identification, infer a signed checkout, or create an accepted assignment.
+M1 uses schema v3: validate v1/v2, add empty case state, and supply empty NPC memory for v1. World/progression collections are deferred until required by later milestones. Preserve player coordinates/facing, discovery IDs/timestamps and NPC events exactly. Do not turn an old `receptionist-account` into Daniel's positive identification, infer a signed checkout, or create an accepted assignment.
 
 Keep existing record meanings and the receptionist ID; new claims get new IDs. Schema version describes structure; content version/catalog describes definitions. At the content milestone, explicitly determine whether a content-version change is required and write the corresponding compatibility mapping. Merely changing an exact-match string would reject every old save. Unsupported newer schema, invalid references and absent content must preserve the original, not delete unknown fields or start saving over it.
 
@@ -64,13 +66,17 @@ Payment, primary disposition, consequence scheduling and earned credit must comm
 
 Checkpoint restore is deliberate and atomic, restoring all related state, not only a case status. Keep the current run until restore succeeds; report storage/quota failure. If a promised pre-withdrawal recovery cannot be stored, do not offer a falsely recoverable withdrawal—retain the assignment and explain the problem. No new persistence library is necessary initially.
 
-## Approval gate before implementation
+## Approval gate for M2 and later
 
-Approve the chapter's proposed timeline, minimal refuge, document provenance, B safety action, C exposure rule, and branch-conflict policy. The exact wording and IDs of evidence should be settled before coding those records. Separately approve protected rewind for a prototype with no in-world reopening. This gate does not require choosing a city name, AI vendor, final chapter count, or final artwork.
+Approve the chapter's proposed timeline, minimal refuge, document provenance, B safety action, C exposure rule, and branch-conflict policy. The exact wording and IDs of evidence should be settled before coding those records. Evidence placement and the withdrawal checkpoint mechanism remain unapproved. The long-term preference is in-world reopening rather than save rewind; settle that design before M8. This gate does not require choosing a city name, AI vendor, final chapter count, or final artwork.
 
-The recommended first implementation milestone is **M1**, after approval. Its case lifecycle can use the already established client/premise without committing any proposed criminal evidence or outcome mechanics.
+**M1 has been approved and implemented.** Its case lifecycle can use the already established client/premise without committing any proposed criminal evidence or outcome mechanics.
 
 ## M1 — Case acceptance and persistent casebook foundation
+
+**Implemented:** `content/cases.ts` contains only the public `case-001` offer. The existing casebook opens a minimal Evelyn contact panel, with Defer initially focused and explicit Accept. Deferring or closing leaves it available; acceptance writes one event and leaves existing field notes unchanged. Saves use v3 with a map of independent case states; v1/v2 migrate without inferring acceptance. No office or new world interactions are needed. The main casebook retains Tab to close, Left/Right selects controls, and Up/Down scrolls; the request uses Tab/Shift+Tab focus navigation and Escape to leave. No general action-confirmation framework, world/progression placeholders, or M2 mechanics were added.
+
+**Verification:** nine new case/input tests plus the existing 41 tests cover this scope; TypeScript/build and browser smoke checks are reported with the implementation. The two-case fixture is test content only.
 
 - **Objective:** Accept or defer Evelyn's job and see an active Case 001 without making exploration conditional on it.
 - **Scope:** A minimal offer/contact panel using the supplied premise; explicit acceptance through a narrow core command; a casebook assignment list alongside existing field notes. No withdrawal button or final outcome yet.
@@ -142,8 +148,10 @@ The recommended first implementation milestone is **M1**, after approval. Its ca
 
 ## M8 — Withdrawal with recovery
 
+**Unapproved:** the checkpoint details below retain the original proposal for comparison. They are not the selected implementation. The current preference is in-world reopening; redesign this milestone after the recovery policy is approved. No M8 functionality is part of M1.
+
 - **Objective:** End the assignment as unresolved without payment, hidden reveals, or an unavoidable progression trap.
-- **Scope:** Confirm D, Evelyn's public response, retained records/memories, protected whole-session pre-withdrawal checkpoint and explicit rewind. In-world reopening remains deferred unless approved instead.
+- **Scope:** Confirm D, Evelyn's public response, retained records/memories, protected whole-session pre-withdrawal checkpoint and explicit rewind. In-world reopening is preferred long term; checkpoint rewind has not been approved.
 - **Reuse:** Case state/history, M2 confirmation, versioned saves, modal warnings and content selectors.
 - **New components/data:** Checkpoint envelope excluding nested checkpoints, atomic restore path, withdrawn assignment entry. Keep checkpoint until explicit replacement/restore; handle failed storage before promising recovery.
 - **Dependencies:** M1–M2; approved recovery policy. Integrate with M5–M7 to reject withdrawal after a primary resolution and prevent unintended payments/credits.
