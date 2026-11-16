@@ -1,128 +1,131 @@
 # Dead End — Game Design
 
-Status: design baseline with an implemented exploration slice. The implementation status below distinguishes the current build from the broader design. Technical boundaries are defined in [architecture.md](architecture.md); contributor rules are in [AGENTS.md](../AGENTS.md).
+Planning baseline: November 15, 2026. This document updates the game vision; it does not claim the planned systems exist. Read with [Chapter 1](chapter-1-bellweather.md), the [implementation plan](chapter-1-implementation-plan.md), existing [architecture](architecture.md), and [contributor instructions](../AGENTS.md).
 
-## Current exploration build
+## Status and decision authority
 
-The requested first implementation uses a **side view with limited vertical floor depth**, procedural placeholder graphics, and direct WASD/arrow movement. The lobby, staircase, fourth-floor hallway, and Room 407 are connected through named entries. Stair travel explicitly abbreviates three flights; the second and third floors are shown in the stair cutaway but are not explorable. Tab opens and closes the notebook. E starts a nearby conversation; Enter sends typed messages, Shift+Enter inserts a new line, and Escape closes blocking UI.
+- **Established direction:** requirements supplied in the Chapter 1 planning brief, including its mystery and four outcomes. They supersede the former prototype's absence of story canon.
+- **Implemented:** behavior inspected on `main` at `4d5efea`, which includes the free-form conversation milestone. These are explicitly identified below.
+- **Proposed:** implementation choices, connective story details, locations beyond the hotel, and pacing. These require review before gameplay implementation.
+- **Open:** decisions without an agreed answer. A proposed answer is not approval.
 
-The receptionist accepts free-form typed questions and statements with deterministic mock replies and a temporary conversation history. Room 407 is vacant and unlocked for inspection, independent of talking to the receptionist. The champagne glass, folded note, and undisturbed bed produce observations. The receptionist's account is recorded separately as unverified testimony only when heard. These are prototype story details, not an established mystery solution. One browser-local save retains position, discoveries, and significant NPC interaction events.
+The three planning documents form one design proposal. The unchanged `architecture.md` remains the record of current implementation and earlier expansion ideas; the assessment in the implementation plan explains the proposed additions. No code, artwork, dependencies, or services are changed by this planning task.
 
-This build intentionally implements the exploration subset of the original milestone below. Case offers/acceptance, inventory collection, deductions, consequential accusations, and case resolution remain future work. A narrow accusation-memory demonstration is implemented; it does not determine guilt or restrict exploration. In particular, the case acceptance checks below are design targets, not claims about the current build.
+## Concept and tone
 
-The current playable version uses the approved Simplified Detective V2: a stylized human noir detective with short legs, a walk loop using seven of its eight source frames to avoid a repeated end pose, and a static idle pose. Minor animation imperfections are accepted for this milestone; the grounded setting and story rules are unchanged. The previous detective configuration, including its coin flip, remains available through a development configuration switch. These animations are visual only: they do not change collision footprints, movement, interactions, or saved knowledge. The geometry placeholder remains the fallback when required sheets are unavailable; the [asset contract](character-animation.md) records the current configuration and artwork limitations.
+Dead End is a chapter-based, single-player detective RPG set in a fictional American city in the late 1940s. The detective has a fixed identity, appearance, history, and personality: a flawed, somewhat sarcastic private investigator with an established life in the city. His name, specific biography, city name, exact year, and mature-content boundaries remain open. Do not replace the approved character with a player-created avatar.
 
-## Vision and tone
+The player determines his investigations, actions, relationships, and decisions. His voice can shape delivery, but must preserve what the player actually means. A cautious question must not become an accusation; a refusal must not become consent; sarcasm must not silently disclose confidential information. Show consequential interpretations for explicit confirmation.
 
-Dead End is a 1940s-inspired, illustrated 2D detective adventure about a flawed, sarcastic private investigator navigating a believable city. Exploration is the primary activity: the player walks through connected places, notices details, meets people, and decides which stories deserve investigation.
+The world combines serious mysteries with dry humor and memorable human eccentrics. Classic noir cinema informs danger and moral ambiguity; *Who Framed Roger Rabbit* informs comic timing and colorful personalities; *Cuphead* informs expressive staging. These are influences, not licenses for supernatural explanations or cartoon-world physics. The approved Simplified Detective V2 is a stylized human design within a grounded setting.
 
-The atmosphere is slightly exaggerated noir: rain-streaked windows, hard shadows, weary institutions, private grudges, and people who perform confidence they do not feel. Serious mysteries coexist with dry humor, eccentric gangsters, nightclub owners, police officers, and memorable ordinary residents. The detective's sarcasm should reveal character without trivializing victims or making every conversation a joke.
+## Persistent neighborhood, structured chapters
 
-Classic noir cinema informs the mysteries and moral ambiguity. *Who Framed Roger Rabbit* informs the balance of danger, comic timing, and colorful personalities; *Cuphead* informs expressive staging and visual rhythm. These are tonal references, not setting rules: all characters are human, and there are no cartoon characters or supernatural explanations.
+Use a small, dense neighborhood that can expand over time. The broad progression reference is *The Simpsons: Hit & Run*: structured chapters within reusable places and accessible exploration. This does not imply driving, its mission structure, or a GTA-scale city.
 
-## Design pillars
+Chapters advance the larger narrative and can add places, people, and activities. Existing locations remain reusable; authored events may alter access with a believable cause. NPCs can recur and retain significant memories. Changing chapters does not reset discoveries, personal relationships, or consequences. Players can spend time outside investigations speaking to people and exploring.
 
-- **A world before a case:** places, people, and evidence exist whether or not the detective has accepted work.
-- **Readable, consistent spaces:** interiors follow believable floor plans, and movement preserves the player's understanding of where they are.
-- **Investigation through attention:** observation, questioning, puzzles, and deduction matter more than following objectives.
-- **Knowledge has a source:** testimony, direct observation, verified facts, and the player's interpretations remain distinguishable.
-- **Agency with consequences:** the player can act on incomplete information, and people respond believably.
+Potential recurring places include the office, apartment, diner, police station, and Bellweather Hotel. Only the hotel's four spaces exist today. These other places are candidates, not an instruction to build five environments for Chapter 1. Prefer a compact office, the current hotel, and one modest refuge interior for the proposed chapter; use explicit travel between addresses until a street is justified.
 
-## Movement, interaction, and exploration
+## Exploration and spatial rules
 
-Use WASD or arrow keys for direct movement. The game does not use point-and-click movement. E activates a nearby, eligible interaction, with a visible prompt naming its target. When targets overlap, choose consistently using distance and facing, with a stable tie-breaker; never leave the player guessing which object will activate.
+- Preserve direct WASD/arrow movement, side view with shallow vertical floor depth, and proximity interaction with E. Optional mouse world actions must use the same proximity validation; no point-and-click movement or remote evidence collection.
+- Rooms use logical connections, named arrival points, consistent floor levels, and reversible entrances. Bellweather Room 407 remains on the fourth floor; stair travel abbreviates three flights past floors two and three.
+- Evidence exists independently of accepting a job. Discoveries made before acceptance remain available and can later be associated with a case. A case does not own or spawn its clues.
+- Access depends on the world, not an invisible accepted-mission flag. The current unlocked Room 407 remains inspectable without speaking to a client; any later restriction requires a new authored explanation and an alternate investigative route.
+- Blocking conversation/casebook UI suppresses world input. Text editing must not trigger movement or shortcuts. Keep Enter to submit, Shift+Enter for a newline, Escape to exit, and Tab for the notebook outside conversation.
+- Period-appropriate names may contain subtle noir references, but should work without recognizing them. New proper names and addresses in Chapter 1 are marked proposals.
 
-Optional mouse interaction activates the same nearby targets under the same rules. Clicking a distant object must not teleport the detective, collect evidence remotely, or initiate automatic walking. Core world interactions must be usable with the keyboard.
+## Chapters, cases, and progression
 
-Opening dialogue or another blocking UI disables world movement and interaction until it closes. UI focus must not also trigger world actions. Tab toggles the notebook; inventory shortcuts remain to be assigned.
+A **chapter** is a narrative/content grouping; a **case** is an investigation with an assignment, records, actions, and disposition. A chapter may contain a major case, optional jobs, and activities. Chapter 1 initially concentrates on Case 001 — The Guest in Room 407. Do not build a single global `activeCase` model that prevents simultaneous investigations later.
 
-Players may explore without accepting any case. Access restrictions should arise from the world—a locked room, private property, an uncooperative person—not an invisible requirement to accept a mission. Story events may change accessibility, but those changes need an authored cause.
+The provisional commercial/progression outline is five chapters, with Chapter 1 a free demo and Chapters 1 and 2 initially accessible in the full game. Subsequent chapters unlock through major investigations; the final chapter may require resolving all major investigations. Neither the chapter count nor these unlock thresholds is final. Keep prerequisites data-driven and distinguish ownership, narrative eligibility, and currently selected chapter.
 
-## Spatial consistency
+Progression comes from solving or meaningfully resolving investigations, not experience points or skill levels. The player's growing knowledge, reputation, relationships, access, and choices carry development. Do not add skills that automatically detect clues, identify lies, or solve contradictions.
 
-Each building has an authored floor plan covering room adjacency, floor levels, doors, landings, and stairs. A door leads to a defined entrance in its destination; returning through it restores the corresponding side of the original connection. Arrival positions and facing must make spatial sense and keep the detective out of walls and transition triggers.
+For Case 001, A (contract fulfilled), B (Daniel protected), and C (operation exposed) each grant one durable progression credit. D (withdrawn/unresolved) grants none. Later tragic news does not remove A's credit or relabel it a failed assignment. Repeated callbacks, chapter visits, and case reopening cannot duplicate credit. No morality grade is displayed.
 
-Room layouts remain stable across visits. Doors retain their lock state, collected objects remain collected, and upstairs rooms align plausibly with the building below. Scene boundaries are a rendering choice, not permission to invent impossible connections. Floor labels and stair travel must make changes in elevation understandable.
+**Proposed progression safeguards:** already earned chapter access is not revoked; only authored resolution events grant credit; case dependencies must be checked for cycles and unreachable states. If a final chapter requires every major case, every unresolved required case must have a reachable reopening or alternate meaningful-resolution route. Opening Chapter 2 does not by itself fix withdrawal blocking a later all-cases gate.
 
-Location names should feel period-appropriate. Occasional subtle noir references are welcome, but names should work without recognizing the reference. Bellweather Hotel is established; additional names and the city itself are not yet canon.
+## Casebook, assignments, and consequences
 
-## Investigation and cases
+Evolve the existing notebook into a persistent casebook. Retain a general field-notes view alongside active, withdrawn, and completed/resolved investigations. Players see observations, witness accounts and sources, relevant people, alleged event times, their own interpretations, assignment history, final disposition, and later learned consequences. Do not expose undiscovered case associations or hidden solutions through headings or record counts.
 
-The recurring activity is to explore, observe or collect, question people, compare accounts, form a theory, and choose how to act. This is not a mandatory sequence: the player can revisit places, discover clues out of order, or decline work.
+Keep three concepts separate:
 
-Cases begin through conversations with potential clients and an explicit choice to accept. Hearing an offer does not automatically accept it. Accepting a case associates previously discovered relevant material with that investigation; it does not spawn the evidence or require collecting it again.
+| Concept | Proposed responsibility | Case 001 example |
+| --- | --- | --- |
+| Assignment status | Offered, active, withdrawn, closed; acceptance/withdrawal history | A closed paid contract; D withdrawn without payment |
+| Investigation disposition | Unresolved, contract fulfilled, protected, exposed | B can be resolved while the client's original demand is refused |
+| World consequences and learned updates | Events that occurred versus events the detective has learned | Daniel's murder after A exists before the newspaper entry is read |
 
-Investigations may include physical evidence, environmental observations, NPC questioning, environmental puzzles, codes, locked doors, and deductions that connect multiple sources. Puzzle answers and case solutions are authored facts. Evidence visibility and availability follow world conditions independently of case acceptance.
+The casebook is derived from authoritative state, not a second mutable evidence database. Physical possession, observation, testimony, verification, and deduction remain separate. A repeated observation does not duplicate a record; a revised witness account uses a new record and retains the original. Device recording time is not in-world event time. Estimates and uncertainty stay explicit. A theory is not automatically true.
 
-Questioning should expose each person's knowledge, motives, mistakes, and willingness to cooperate. New evidence can unlock topics without converting every conversation into a checklist. Contradictions stay visible rather than silently replacing earlier statements.
+The interface can let players compare records or cite supporting sources, but must not identify lies, label correct clue pairings, supply the next action, or confirm the culprit. Rule evaluation for an authored action is not an automatic deduction announcement.
 
-Players may accuse suspects before gathering sufficient evidence. Accusations need a deliberate player statement but must not require a complete evidence checklist. Authored consequences can include lost trust, refusal to cooperate, police attention, or a damaged case outcome. Consequences should follow the accusation and circumstances; they must not reveal the culprit merely by labeling the accusation correct or incorrect. The severity and recoverability of these outcomes remain open design decisions.
+### Withdrawal and reopening
 
-## Free-form NPC conversation foundation
+Withdrawal is a deliberate confirmed action ending the current assignment without solving it. It preserves knowledge and NPC memories; it reveals no hidden fate. Reopening is a long-term capability dependent on story circumstances, distinct from starting a blank investigation.
 
-Players type their own questions and statements rather than selecting predefined responses. The current receptionist mock recognizes broad keywords for the existing account (last night, midnight, or “what did you see”) and Room 407 information. Other text receives a neutral fallback. These are prototype routing rules, not natural-language understanding or new mystery canon.
+For a prototype that defers reopening, **propose a protected whole-session checkpoint before withdrawal**, with a clear “Return to before withdrawal” option. This is a rewind, not an in-world reopening; subsequent actions are rolled back with it. Keep exploring after D is also allowed, without resolution credit or an automatic fate reveal. The player must understand both choices before confirming withdrawal. Do not silently reset a case, erase only selected consequences, or make restarting the entire game the sole recovery path.
 
-For the memory demonstration, only the complete statement “I accuse you” or “I accuse the receptionist” registers an accusation. Capitalization and whitespace are normalized; a single final period or exclamation mark is optional. Questions, quotations, negation, and longer allegations do not match. In particular, “Are you lying?” does not register an accusation. This deliberately limited rule is not the final accusation interface.
+This checkpoint policy requires approval and implementation before D can be considered safely playable. A release with mandatory later case gates must implement actual reactivation/alternate resolution or revise those gates. A warning alone is not a remedy for an unavoidable progression trap.
 
-The receptionist remembers the first accusation across visits, room changes, and reloads, and acknowledges it in later greetings/replies. The event records who was addressed, where, and when; repeating it does not reset its timestamp or add duplicates. It establishes neither guilt nor any verified mystery fact. No relationship score, access penalty, or irreversible consequence is introduced.
+## NPCs and free-form conversation
 
-Conversation transcripts are temporary, limited to the latest 80 lines, and cleared when the conversation closes or the page reloads. Messages may contain up to 2,000 characters. Only significant typed events are durable; full player messages are not saved. Notebook testimony still comes exclusively from the existing authored account when displayed. A failed or abandoned response does not grant unheard testimony; an already submitted explicit accusation remains remembered.
+Important NPCs accept typed questions and statements. Their authored profiles distinguish facts known personally, beliefs, uncertainty, motivations, relationships, intentional lies, and observations of the detective. They may lie, evade, misunderstand, or misremember. They recognize meaningful follow-ups and repeated topics, without automatically confessing when contradicted. Background characters may remain entirely scripted.
 
-## Notebook and evidence
+Persist significant events and authored topic history rather than every chat message. An NPC can react only to information they observed, were told, or learned through a defined communication event. Evelyn cannot detect that the player read a document in Room 407 merely because a global discovery flag changed. No numerical trust/relationship simulation is required for the first case.
 
-The notebook records observations, testimony, people, and timelines. It is a factual memory aid, not a quest guide: it must not prescribe the next action or expose undiscovered information.
+Keep story authority in deterministic TypeScript rules. An eventual AI service may phrase allowed replies and propose interpretations for validation; it cannot invent canon, grant evidence, establish guilt, accept a job, disclose a hiding place, or trigger irreversible consequences on its own. Never send the complete solution to every NPC. Deception is authored, not an AI hallucination treated as a new plot twist.
 
-| Record | What the notebook may say |
+**Proposed consequential-action flow:** ordinary typed dialogue continues freely. A recognized request to accept, report, protect, expose, or withdraw opens a concise action preview; the player confirms or cancels. Use explicit action controls as an accessible fallback so success never requires guessing one exact phrase. These controls confirm world mutations, not predefined dialogue menus. The preview identifies recipient, information being disclosed, and the immediate commitment; it does not reveal an unknown future murder. Ambiguous language requests clarification rather than performing an action.
+
+## Current implementation — not the finished chapter
+
+Inspected November 15, 2026:
+
+| Implemented | Limits |
 | --- | --- |
-| Direct observation | What the detective actually saw or examined, with location and discovery time. |
-| Testimony | Who made the statement, what they claimed, and when it was recorded. |
-| Verified fact | A specific proposition supported by recorded verification, with links to its supporting sources. |
-| Deduction or theory | An interpretation, clearly labeled and linked to its basis; not automatically true. |
+| Phaser 4.0.0 / React 19.1.0 / TypeScript 5.7.3 / Vite 6.3.2 | Existing scaffold and configuration retained; no new engine or state library proposed |
+| Four connected hotel spaces, named entries, collisions, camera, Detective V2 | No office, street, refuge, inventory, mutable locks, or NPC schedules |
+| Free-form receptionist conversation with mock adapter | Keywords route existing account/room responses; no general language understanding or AI provider |
+| Typed first-accusation memory | Whole “I accuse you” / “I accuse the receptionist” statement only, normalized whitespace/case, optional final `.` or `!`; criticism, questions and longer accusations do not match |
+| Conversation input/focus isolation, pending/error handling, late-reply guard | Transcript capped at 80 lines and cleared on exit/reload; message limit 2,000 characters; no persistent topic history |
+| Three Room 407 observations plus one attributed receptionist account | No suitcase, register, ledger, case status, theory comparison, verified-fact graph, or outcomes |
+| Local save schema v2, v1 migration, preserved unreadable saves | Saves hold player, discovery IDs/timestamps, and NPC memory only; no chapter state, checkpoint UI, export/import or recovery UI |
+| 41 authored automated tests across exploration, conversation, animation | No case/outcome/progression tests exist yet; tests were inspected, not rerun for this documentation task |
 
-For example, “The clerk says the guest left at midnight” is testimony. It does not establish that the guest left at midnight. Even verified physical evidence supports only its actual observation: a monogram on an object does not by itself prove ownership or guilt.
+Normal movement checkpoints every two seconds; meaningful state changes also save. Storage is one browser-origin slot with historical key `dead-end.bellweather.v1`; schema version is inside the envelope. Case knowledge must remain separate from generated conversation text as the model expands.
 
-Timeline entries distinguish when something allegedly happened from when the detective learned about it. Unknown times, estimates, and conflicting accounts remain explicit. Corroboration adds support without erasing original provenance. Repeated examination should not produce duplicate evidence or notebook entries.
+## Commercial model and content boundaries
 
-Physical inventory and knowledge are different. The detective can observe something without taking it; transferring an item does not erase the observation. A case may reference evidence without owning its existence or discovery state.
+Established intent: a free Chapter 1 demo and a complete paid game. One purchase includes all included chapters; later access is unlocked through play, not separate chapter purchases. This task designs neither a storefront nor entitlement enforcement, DRM, payments, accounts, or backend services.
 
-## Money and relationships
+Propose shared stable IDs and shared core rules for demo/full builds, with a content catalog describing which chapters are shipped in each build. A build's installed content, purchase ownership, and a save's progression are distinct inputs. Demo worlds should end at an explicit travel boundary, not a broken portal into absent content. Exclude paid chapter payloads from the demo build rather than merely hiding their buttons. Do not promise that client-side bundled secrets are tamper-proof.
 
-Money, purchases, optional gambling, and relationships may influence access, information, and cooperation. These systems should create meaningful choices grounded in the setting. Gambling is optional; it must not become a mandatory source of investigation progress. Economy balance, relationship visibility, and recovery from financial mistakes are deferred until the basic investigation loop works.
+Demo-to-full continuity is an architectural target: preserve discoveries, NPC events, decisions, dispositions, and checkpoints. Browser localStorage is origin-specific and cannot automatically transfer to a desktop distribution or another domain. Plan a versioned export/import or equivalent platform transfer, validate references against the appropriate content catalog, and preserve unsupported data. Do not load a full-game save into a smaller demo by silently deleting unknown cases or moving the player arbitrarily; reject it with a useful explanation or support an explicitly designed subset view later.
 
-## First playable: Bellweather Hotel
+## AI operating-cost constraints
 
-The first playable is a small connected section of the hotel containing a lobby, staircase, upstairs hallway, and Room 407. It demonstrates exploration and trustworthy information handling before attempting a complete mystery.
+A one-time purchase does not fund unlimited recurring conversations by assumption. The deterministic authored fallback must support the complete investigation, including all four outcomes, without a paid service. Critical evidence and resolution must never depend on an API being available or a conversation allowance remaining.
 
-The connection is lobby ↔ staircase ↔ upstairs hallway ↔ Room 407. Room 407 is on the fourth floor, as confirmed by the implementation request. Stair travel must visibly account for the intervening floors, even if other floors are inaccessible or travel is abbreviated. Do not silently depict a single flight from the lobby as reaching the fourth floor.
+Before selecting a service, measure turns per player, context size, output length, retries, repeat visits and long-term play. A provider-neutral budgeting model is:
 
-Minimum content:
+`conversation cost = turns × ((average input tokens × input rate) + (average output tokens × output rate)) / rate unit + retry costs + supporting-service costs`
 
-- One controllable detective, illustrated or temporary readable environments, and collision boundaries.
-- All four connected spaces, with explicit entrances, return paths, and safe arrival positions.
-- At least one NPC, provisionally a hotel clerk, with authored dialogue and an attributed statement.
-- At least one inspectable piece of evidence available before accepting a case; its content remains to be authored.
-- A notebook recording the observation and testimony separately, plus the relevant person and timeline information without asserting an unverified event.
-- A minimal client conversation with an optional case offer, so pre-acceptance discovery and later association can be demonstrated. The client may reuse the same NPC for this slice; final identity and premise are undecided.
-- Local save/load for discovered evidence, notebook records, case acceptance, and player location.
+Rates and the rate unit must come from the selected provider at evaluation time; no live prices or provider commitments are assumed here. Include context growth, moderation/validation calls if used, hosting, storage, bandwidth, monitoring, abuse, failed requests, demo users who never purchase, and ongoing users after sales decline. Separate demo usage from paid-user lifetime usage. Model a typical player and heavy/repeated use, not only average chapter completion.
 
-Acceptance checks:
+Possible controls to review later: short bounded context, structured memory summaries, cached non-sensitive authored replies, per-session/account budgets, request throttling, and a transparent switch to authored responses. Free-form input stays usable in fallback mode. Budget limits must not become purchases for individual chapters or a hidden charge for solving a case. A local model avoids per-request hosted fees but introduces hardware, distribution, quality and support costs; it is not presumed free or suitable.
 
-1. Start with no accepted case, move with either keyboard scheme, and visit every included space.
-2. Travel both directions through each connection; floor changes, arrival position, facing, and collisions remain coherent.
-3. Interact with the NPC using E; dialogue blocks movement and closing it restores control without an accidental world action.
-4. Discover evidence before accepting the offer; it appears once in the notebook and survives revisiting the room.
-5. Accept the case later; previously discovered relevant evidence becomes associated without rediscovery or duplication.
-6. Read an NPC claim and a direct observation in the notebook and clearly tell which is which. No entry reveals a solution or tells the player what to do next.
-7. Reload the game and retain location, discoveries, testimony, and case status.
+No provider is selected. A hosted implementation would keep credentials on a server, constrain context to permitted NPC knowledge, validate outputs, set timeouts/cancellation, and define privacy/retention rules for player text. Approval of an AI quality target, realistic lifetime budget, and service-retirement/offline policy is a release decision, not part of this implementation plan's critical path.
 
-Combat, a complete city, a full case resolution, accusation consequences, gambling, an economy, relationship simulation, AI dialogue, and optional mouse controls are outside this first slice. These exclusions narrow the milestone, not the long-term vision.
+## Review decisions
 
-## Remaining design decisions
-
-| Decision | Proposed starting point |
-| --- | --- |
-| First investigation content | Agree on the client and case premise before introducing case acceptance; decide whether the prototype testimony and objects become final story content. |
-| Detective and setting | Choose the detective's identity, city, approximate year, and boundaries for mature themes before final dialogue. |
-| Accusation consequences | Decide whether a case can become irreversibly unsolvable and how recovery or alternate outcomes work. |
-| Deduction interface | Start with authored evidence relationships; decide later how players explicitly submit theories or connections. |
-
+1. Approve the proposed Chapter 1 timeline, refuge, evidence provenance, and NPC lie boundaries in the chapter document.
+2. Approve what qualifies as deliberate protection for B and how the player confirms disclosures without spoiler warnings.
+3. Approve withdrawal recovery for the prototype; resolve reopening versus mandatory late-game gates before release.
+4. Confirm the commercial chapter-access outline; do not encode a five-chapter count or fixed unlock threshold yet.
+5. Set the detective's fixed identity, city, exact year, and thematic boundaries before final dialogue and art.
+6. Approve eventual AI budgets and fallback policy only after the authored case works end to end.
