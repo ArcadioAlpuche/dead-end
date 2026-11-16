@@ -9,7 +9,7 @@ Planning baseline: November 15, 2026; updated for the approved M1 and M2 impleme
 - **Proposed:** implementation choices, connective story details, locations beyond the hotel, and pacing. These require review before gameplay implementation.
 - **Open:** decisions without an agreed answer. A proposed answer is not approval.
 
-The planning documents retain the future chapter proposal. `architecture.md` records the implemented contracts. M1 and M2 are implemented; M3 and later remain unapproved for implementation; proposed evidence placement and withdrawal checkpoints remain open. The long-term preference is in-world case reopening rather than save rewind.
+The planning documents retain the future chapter proposal. `architecture.md` records the implemented contracts. M1, M2, and the limited M3 NPC foundation are implemented; M4 and later remain unapproved for implementation. Proposed evidence placement, detailed NPC lies, and withdrawal checkpoints remain open. The long-term preference is in-world case reopening rather than save rewind.
 
 ## Concept and tone
 
@@ -76,7 +76,7 @@ This checkpoint policy is an unapproved alternative, not an implementation requi
 
 ## NPCs and free-form conversation
 
-**M2 prototype boundary:** arbitrary text may be typed, but only supported whole-message ordinary phrases reach the receptionist. Unknown or potentially consequential messages remain private and prompt clarification before any NPC context update. Authored disclosure routing is tested with noncanonical fixtures only; no live reporting or other future case action is available. The existing exact accusation-memory demonstration is preserved. The long-term free-form design below still needs authored content and a reliable interpretation boundary.
+**M3 prototype boundary:** arbitrary text may be typed, but only a small, authored whole-message topic grammar reaches an NPC. It recognizes several paraphrases and follow-ups. Unknown or potentially consequential messages remain private and prompt clarification before any NPC context update. Authored disclosure routing is tested with noncanonical fixtures only; no live reporting or other future case action is available. The existing exact accusation-memory demonstration is preserved. This is not unrestricted natural-language understanding.
 
 Important NPCs accept typed questions and statements. Their authored profiles distinguish facts known personally, beliefs, uncertainty, motivations, relationships, intentional lies, and observations of the detective. They may lie, evade, misunderstand, or misremember. They recognize meaningful follow-ups and repeated topics, without automatically confessing when contradicted. Background characters may remain entirely scripted.
 
@@ -94,13 +94,13 @@ Inspected November 15, 2026:
 | --- | --- |
 | Phaser 4.0.0 / React 19.1.0 / TypeScript 5.7.3 / Vite 6.3.2 | Existing scaffold and configuration retained; no new engine or state library proposed |
 | Four connected hotel spaces, named entries, collisions, camera, Detective V2 | No office, street, refuge, inventory, mutable locks, or NPC schedules |
-| Typed receptionist conversation with mock adapter and M2 pre-dispatch gate | Only supported whole-message phrases are sent; unknown wording stays private for clarification, including benign paraphrases. No general language understanding or AI provider |
+| Authored Arthur/Thomas/Evelyn profiles, mock adapter and M2 pre-dispatch gate | Arthur is the only physically accessible NPC; supported topic paraphrases and follow-ups work, while unsupported wording stays private. No general language understanding or AI provider |
 | Typed first-accusation memory | Whole “I accuse you” / “I accuse the receptionist” statement only, normalized whitespace/case, optional final `.` or `!`; criticism, questions and longer accusations do not match |
-| Conversation input/focus isolation, pending/error handling, late-reply guard | Transcript capped at 80 lines and cleared on exit/reload; message limit 2,000 characters; no persistent topic history |
+| Conversation input/focus isolation, pending/error handling, late-reply guard | Transcript capped at 80 lines and cleared on exit/reload; message limit 2,000 characters; typed topic/statement and limited irritation memory persists |
 | Three Room 407 observations plus one attributed receptionist account | No suitcase, register, ledger, theory comparison, verified-fact graph, or outcomes |
 | Public Evelyn offer, explicit accept/defer, stable case-state map, timestamped acceptance history | One shipped assignment; no withdrawal, reopening, resolution, payment, or chapter unlocking |
-| Local save schema v3, v1/v2 migration, preserved unreadable saves | Saves hold player, discoveries, NPC memories and cases; no chapter state, checkpoint UI, export/import or recovery UI |
-| 59 automated tests across actions, cases, exploration, conversation and animation | Action propose/confirm/cancel, disclosure fixtures, case commands, discovery independence, migration, persistence and input policy are covered; future outcomes/progression remain unimplemented |
+| Local save schema v4, v1/v2/v3 migration, preserved unreadable saves | Saves hold player, discoveries, NPC memories and cases; no chapter state, checkpoint UI, export/import or recovery UI |
+| Automated tests across actions, cases, exploration, conversation, NPC knowledge and animation | Action propose/confirm/cancel, disclosure fixtures, case commands, discovery independence, migration, persistence and input policy are covered; future outcomes/progression remain unimplemented |
 
 Normal movement checkpoints every two seconds; meaningful state changes also save. Storage is one browser-origin slot with historical key `dead-end.bellweather.v1`; schema version is inside the envelope. Case knowledge must remain separate from generated conversation text as the model expands.
 

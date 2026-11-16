@@ -104,6 +104,8 @@ Nine M2 tests supplement the existing 50; M1 tests now confirm acceptance throug
 
 ## M3 — Authored NPC knowledge and follow-ups
 
+**Implemented foundation on `feat/chapter-1-foundation`:** deterministic profiles for Arthur, Thomas, and Evelyn; authored whole-message topic variations and follow-ups; distinct patience responses and durable topic/statement/friction memory; v4 migration. Only Arthur remains physically accessible in the hotel. The narrative knowledge/lie matrix and new testimony in the chapter plan remain proposed and are not shipped as new facts or evidence.
+
 - **Objective:** Evelyn, Arthur and Thomas answer within their own knowledge and remember relevant encounters; the player can ask meaningful follow-ups.
 - **Scope:** Data-driven authored topics and permitted response variants for the approved statements; unknown-topic clarification; repeated-topic handling. Keep deterministic adapters; background characters need no model service.
 - **Reuse:** Async responder boundary, conversation UI, testimony discovery, existing accusation event and save pipeline.

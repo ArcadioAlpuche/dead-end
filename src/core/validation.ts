@@ -35,8 +35,10 @@ export function validateWorld(world: WorldDefinition): void {
     for (const conversation of Object.values(world.conversations)) {
         if (!conversation.npcId || npcIds.has(conversation.npcId)) throw new Error('Missing or duplicate NPC ID');
         npcIds.add(conversation.npcId);
-        for (const line of [conversation.account, conversation.room]) {
-            if (line.recordId && !world.records[line.recordId]) throw new Error(`Missing dialogue record: ${line.recordId}`);
+        if (!conversation.name.trim() || !Number.isInteger(conversation.patience) || conversation.patience < 1) throw new Error(`Invalid NPC profile: ${conversation.npcId}`);
+        for (const [topicId, topic] of Object.entries(conversation.topics)) {
+            if (topic.id !== topicId || !topic.line.text.trim() || !topic.followUp.trim()) throw new Error(`Invalid NPC topic: ${topicId}`);
+            if (topic.line.recordId && !world.records[topic.line.recordId]) throw new Error(`Missing dialogue record: ${topic.line.recordId}`);
         }
     }
 }
@@ -44,7 +46,7 @@ export function validateWorld(world: WorldDefinition): void {
 export function parseSave(value: unknown, world: WorldDefinition): SavedGame | null {
     if (!value || typeof value !== 'object') return null;
     const data = value as Partial<Omit<SavedGame, 'version'>> & { version?: unknown };
-    if ((data.version !== 1 && data.version !== 2 && data.version !== 3) || data.contentVersion !== 'bellweather-1' || !data.player || !Array.isArray(data.discoveries)) return null;
+    if ((data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4) || data.contentVersion !== 'bellweather-1' || !data.player || !Array.isArray(data.discoveries)) return null;
     const player = data.player;
     if (!Object.prototype.hasOwnProperty.call(world.locations, player.locationId) || (player.facing !== -1 && player.facing !== 1)) return null;
     if (typeof player.x !== 'number' || typeof player.y !== 'number' || !canStand(world.locations[player.locationId], player)) return null;
@@ -58,19 +60,26 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
     // V1 has no NPC memory. Never infer accusations from discoveries or dialogue text.
     const memories = data.version === 1 ? [] : data.npcMemories;
     if (!Array.isArray(memories)) return null;
-    const npcIds = new Set(Object.values(world.conversations).map(conversation => conversation.npcId));
+    const profiles = new Map(Object.values(world.conversations).map(conversation => [conversation.npcId, conversation]));
     const memoryKeys = new Set<string>();
     for (const event of memories) {
-        if (!event || typeof event !== 'object' || event.kind !== 'accused'
-            || typeof event.npcId !== 'string' || !npcIds.has(event.npcId)
+        if (!event || typeof event !== 'object' || !['accused', 'topic', 'statement', 'friction'].includes(event.kind)
+            || (data.version !== 4 && event.kind !== 'accused')
+            || typeof event.npcId !== 'string' || !profiles.has(event.npcId)
             || typeof event.locationId !== 'string' || !Object.prototype.hasOwnProperty.call(world.locations, event.locationId)
             || typeof event.recordedAt !== 'number' || !Number.isFinite(event.recordedAt) || event.recordedAt < 0) return null;
-        const key = `${event.npcId}:${event.kind}`;
+        const profile = profiles.get(event.npcId)!;
+        if (event.kind === 'topic' && (typeof event.topicId !== 'string' || !Object.prototype.hasOwnProperty.call(profile.topics, event.topicId))) return null;
+        if (event.kind === 'statement' && (typeof event.statementId !== 'string'
+            || !Object.prototype.hasOwnProperty.call(profile.topics, event.statementId.slice(event.npcId.length + 1))
+            || !event.statementId.startsWith(`${event.npcId}:`))) return null;
+        if (event.kind === 'friction' && (!Number.isInteger(event.count) || event.count < 0 || event.count > profile.patience + 2)) return null;
+        const key = `${event.npcId}:${event.kind}:${event.kind === 'topic' ? event.topicId : event.kind === 'statement' ? event.statementId : ''}`;
         if (memoryKeys.has(key)) return null;
         memoryKeys.add(key);
     }
     // V1/v2 never contained case acceptance. Do not infer it from existing discoveries or memory.
-    const cases = data.version === 3 ? parseCaseStates(data.cases, world.cases) : {};
+    const cases = data.version === 3 || data.version === 4 ? parseCaseStates(data.cases, world.cases) : {};
     if (!cases) return null;
-    return { version: 3, cases, contentVersion: 'bellweather-1', player: { locationId: player.locationId, x: player.x, y: player.y, facing: player.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ kind: event.kind, npcId: event.npcId, locationId: event.locationId, recordedAt: event.recordedAt })) };
+    return { version: 4, cases, contentVersion: 'bellweather-1', player: { locationId: player.locationId, x: player.x, y: player.y, facing: player.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ ...event })) };
 }

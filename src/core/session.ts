@@ -7,6 +7,7 @@ import { caseActionPolicy } from './caseActions.ts';
 import type { CaseActionContext } from './caseActions.ts';
 import { routeConversationInput } from './conversationBoundary.ts';
 import type { ConversationResponder } from './conversation.ts';
+import { frictionCount, lastDiscussedTopic, rememberOnce, setFriction } from './npcMemory.ts';
 import { canStand, distance, INTERACTION_RADIUS } from './spatial.ts';
 
 export class GameSession {
@@ -47,7 +48,7 @@ export class GameSession {
     getPlayer(): Player { return this.player; }
     isBlocked(): boolean { return this.view.pendingAction !== null || this.view.notebookOpen || this.view.conversation !== null; }
     getSave(): SavedGame {
-        return { version: 3, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-1', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
+        return { version: 4, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-1', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
     }
     private publish(patch: Partial<ViewState>): void {
         this.view = { ...this.view, ...patch };
@@ -96,7 +97,7 @@ export class GameSession {
             this.publish({ message: this.world.records[target.recordId].text });
         } else {
             const definition = this.world.conversations[target.conversationId];
-            const remembers = this.npcMemories.some(event => event.npcId === definition.npcId);
+            const remembers = this.npcMemories.some(event => event.npcId === definition.npcId && event.kind === 'accused');
             this.publish({ conversation: {
                 id: target.conversationId, name: definition.name, pending: false, error: '',
                 history: [{ speaker: definition.name, text: remembers
@@ -122,25 +123,52 @@ export class GameSession {
             return false; // A private proposal is never an NPC message.
         }
         const topic = route.topic;
+        const authored = definition.topics[topic === 'follow-up' ? lastDiscussedTopic(this.npcMemories, definition.npcId) ?? '' : topic];
+        if (['account', 'room', 'assignment', 'follow-up'].includes(topic) && !authored) {
+            this.publish({ conversation: { ...conversation, error: 'Not sent. Ask about a specific topic first.' } });
+            return false;
+        }
         // The player's explicit statement is remembered even if the response fails or they leave.
-        if (topic === 'accusation' && !this.npcMemories.some(event => event.npcId === definition.npcId && event.kind === 'accused')) {
-            this.npcMemories = [...this.npcMemories, { kind: 'accused', npcId: definition.npcId,
-                locationId: this.player.locationId, recordedAt: Date.now() }];
+        if (topic === 'accusation') {
+            this.npcMemories = rememberOnce(this.npcMemories, { kind: 'accused', npcId: definition.npcId,
+                locationId: this.player.locationId, recordedAt: Date.now() });
+        }
+        const oldFriction = frictionCount(this.npcMemories, definition.npcId);
+        const irritation = topic === 'irrelevant' ? Math.min(oldFriction + 1, definition.patience + 2) : 0;
+        if (topic === 'irrelevant' || oldFriction > 0 && (authored || topic === 'follow-up' || topic === 'rapport' || topic === 'small-talk')) {
+            this.npcMemories = setFriction(this.npcMemories, definition.npcId, this.player.locationId, irritation, Date.now());
         }
         const history = [...conversation.history, { speaker: 'Detective', text }].slice(-MAX_HISTORY_LINES);
         const generation = ++this.requestGeneration;
         this.publish({ conversation: { ...conversation, history, pending: true, error: '' } });
         try {
-            const response = await this.responder.respond({ npcId: definition.npcId, text, topic,
+            const scripted = topic === 'irrelevant' ? irritation > definition.patience + 1 ? definition.silent
+                : irritation > definition.patience ? definition.disengaged
+                : irritation === definition.patience ? definition.warning : definition.irrelevant
+                : topic === 'rapport' ? definition.rapport
+                : topic === 'small-talk' ? definition.smallTalk
+                : topic === 'accusation' ? definition.accusationReply
+                : oldFriction > definition.patience && authored ? definition.reengaged : null;
+            const adapterResponse = scripted && topic !== 'accusation' ? null : await this.responder.respond({ npcId: definition.npcId, text, topic,
                 history: history.map(line => ({ speaker: line.speaker, text: line.text })),
                 memories: this.npcMemories.filter(event => event.npcId === definition.npcId).map(event => ({ ...event })) });
+            const response = scripted ?? adapterResponse;
             if (generation !== this.requestGeneration || !this.view.conversation) return true;
             if (typeof response !== 'string' || !response.trim() || response.length > 4000) throw new Error('Invalid response');
             // Only core-selected authored lines can grant knowledge. Adapter text is never evidence.
-            const authored = topic === 'account' ? definition.account : topic === 'room' ? definition.room : undefined;
-            const lines = [...history, { speaker: definition.name, text: response }, ...(authored ? [authored] : [])].slice(-MAX_HISTORY_LINES);
+            const line = topic === 'follow-up' && authored ? { speaker: definition.name, text: authored.followUp }
+                : authored?.line;
+            const lines = [...history, { speaker: definition.name, text: response }, ...(line ? [line] : [])].slice(-MAX_HISTORY_LINES);
             this.publish({ conversation: { ...conversation, history: lines, pending: false, error: '' } });
-            if (authored?.recordId) this.discover(authored.recordId);
+            if (authored && topic !== 'follow-up') {
+                this.npcMemories = rememberOnce(this.npcMemories, { kind: 'topic', npcId: definition.npcId,
+                    topicId: authored.id, locationId: this.player.locationId, recordedAt: Date.now() });
+            }
+            if (authored && line === authored.line) {
+                this.npcMemories = rememberOnce(this.npcMemories, { kind: 'statement', npcId: definition.npcId,
+                    statementId: `${definition.npcId}:${authored.id}`, locationId: this.player.locationId, recordedAt: Date.now() });
+            }
+            if (line?.recordId) this.discover(line.recordId);
         } catch {
             if (generation === this.requestGeneration && this.view.conversation) {
                 this.publish({ conversation: { ...conversation, history, pending: false,

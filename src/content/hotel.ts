@@ -1,5 +1,6 @@
 import type { WorldDefinition } from '../core/model.ts';
 import { cases } from './cases.ts';
+import { npcConversations } from './npcs.ts';
 
 // Prototype story details are deliberately observations and attributed claims, not a case solution.
 export const hotel: WorldDefinition = {
@@ -81,13 +82,5 @@ export const hotel: WorldDefinition = {
         'undisturbed-bed': { id: 'undisturbed-bed', kind: 'observation', title: 'An undisturbed bed', locationId: 'room407', source: 'Direct examination · Room 407', text: 'The coverlet is smooth and the pillows are arranged against the headboard. This does not establish whether anyone slept here earlier.' },
         'receptionist-account': { id: 'receptionist-account', kind: 'testimony', title: 'The receptionist’s account', locationId: 'lobby', source: 'Receptionist · Conversation in the lobby', eventTime: 'Last night, around midnight — according to the receptionist', text: 'The receptionist says someone came down from the upper floors around midnight, carrying a coat. They did not see which room the person left. This account has not been verified.' },
     },
-    conversations: {
-        reception: {
-            npcId: 'receptionist', name: 'Receptionist',
-            greeting: 'Welcome to the Bellweather. The clock runs slow. The bill does not.',
-            rememberedAccusationGreeting: 'I remember your accusation. What would you like to ask?',
-            account: { speaker: 'Receptionist', text: 'Someone came down from upstairs around midnight, carrying a coat. I couldn’t tell you which room. That’s all I saw.', recordId: 'receptionist-account' },
-            room: { speaker: 'Receptionist', text: '407 is vacant and unlocked for inspection. Fourth floor, three flights up. Please leave everything where you find it.' },
-        },
-    },
+    conversations: npcConversations,
 };

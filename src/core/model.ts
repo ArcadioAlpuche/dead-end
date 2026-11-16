@@ -24,15 +24,35 @@ export interface ConversationDefinition {
     readonly name: string;
     readonly greeting: string;
     readonly rememberedAccusationGreeting: string;
-    readonly account: DialogueLine;
-    readonly room: DialogueLine;
+    readonly personality: string;
+    readonly patience: number;
+    readonly warning: string;
+    readonly disengaged: string;
+    readonly silent: string;
+    readonly reengaged: string;
+    readonly accusationReply: string;
+    readonly rapport: string;
+    readonly smallTalk: string;
+    readonly irrelevant: string;
+    readonly topics: Readonly<Record<string, NpcTopicDefinition>>;
 }
-export interface NpcMemoryEvent {
-    readonly kind: 'accused';
+export interface NpcTopicDefinition {
+    readonly id: string;
+    readonly stance: 'observed' | 'procedure' | 'claim' | 'belief' | 'uncertain' | 'evasion' | 'deception';
+    readonly line: DialogueLine;
+    readonly followUp: string;
+}
+interface MemoryBase {
+    readonly kind: 'accused' | 'topic' | 'statement' | 'friction';
     readonly npcId: string;
     readonly locationId: LocationId;
     readonly recordedAt: number;
 }
+export type NpcMemoryEvent =
+    | (MemoryBase & { readonly kind: 'accused' })
+    | (MemoryBase & { readonly kind: 'topic'; readonly topicId: string })
+    | (MemoryBase & { readonly kind: 'statement'; readonly statementId: string })
+    | (MemoryBase & { readonly kind: 'friction'; readonly count: number });
 export interface CaseDefinition {
     readonly id: string;
     readonly title: string;
@@ -79,7 +99,7 @@ export interface WorldDefinition {
     readonly conversations: Readonly<Record<string, ConversationDefinition>>;
 }
 export interface SavedGame {
-    readonly version: 3;
+    readonly version: 4;
     readonly contentVersion: 'bellweather-1';
     readonly player: Player;
     readonly discoveries: readonly Discovery[];
