@@ -1,6 +1,11 @@
 import type { CaseState, Discovery, Entry, Interaction, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
 import { casebookEntries, copyCaseStates } from './cases.ts';
-import { classifyMessage, MAX_HISTORY_LINES, MAX_MESSAGE_LENGTH } from './conversation.ts';
+import { MAX_HISTORY_LINES, MAX_MESSAGE_LENGTH } from './conversation.ts';
+import { ActionConfirmation } from './actions.ts';
+import type { ActionRequest } from './actions.ts';
+import { caseActionPolicy } from './caseActions.ts';
+import type { CaseActionContext } from './caseActions.ts';
+import { routeConversationInput } from './conversationBoundary.ts';
 import type { ConversationResponder } from './conversation.ts';
 import { canStand, distance, INTERACTION_RADIUS } from './spatial.ts';
 
@@ -12,17 +17,20 @@ export class GameSession {
     private view: ViewState;
     private npcMemories: readonly NpcMemoryEvent[];
     private requestGeneration = 0;
+    private readonly actions: ActionConfirmation<CaseActionContext>;
     private readonly responder: ConversationResponder;
     private readonly listeners = new Set<() => void>();
 
     constructor(world: WorldDefinition, saved?: SavedGame, responder?: ConversationResponder) {
         this.world = world;
+        this.actions = new ActionConfirmation(caseActionPolicy(world));
         this.cases = copyCaseStates(saved?.cases ?? {});
         this.responder = responder ?? { async respond() { throw new Error('No conversation responder configured'); } };
         this.npcMemories = saved?.npcMemories ?? [];
         this.player = saved?.player ?? { locationId: 'lobby', ...world.locations.lobby.entries.arrival };
         this.discoveries = saved?.discoveries ?? [];
         this.view = {
+            pendingAction: null, actionError: '',
             locationId: this.player.locationId, nearby: null, notebookOpen: false, conversation: null,
             caseOfferId: null, cases: casebookEntries(world.cases, this.cases),
             entries: this.discoveries.map(d => ({ ...world.records[d.id], recordedAt: d.recordedAt })),
@@ -37,7 +45,7 @@ export class GameSession {
         return () => { this.listeners.delete(listener); };
     };
     getPlayer(): Player { return this.player; }
-    isBlocked(): boolean { return this.view.notebookOpen || this.view.conversation !== null; }
+    isBlocked(): boolean { return this.view.pendingAction !== null || this.view.notebookOpen || this.view.conversation !== null; }
     getSave(): SavedGame {
         return { version: 3, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-1', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
     }
@@ -101,9 +109,19 @@ export class GameSession {
     async submitMessage(raw: string): Promise<boolean> {
         const conversation = this.view.conversation;
         const text = raw.trim();
-        if (!conversation || conversation.pending || !text || text.length > MAX_MESSAGE_LENGTH) return false;
+        if (!conversation || conversation.pending || this.view.pendingAction || !text || text.length > MAX_MESSAGE_LENGTH) return false;
         const definition = this.world.conversations[conversation.id];
-        const topic = classifyMessage(text);
+        // This boundary precedes transcript, memory, authored testimony and responder dispatch.
+        const route = routeConversationInput(text, definition.npcId);
+        if (route.kind === 'clarify') {
+            this.publish({ conversation: { ...conversation, error: route.message } });
+            return false;
+        }
+        if (route.kind === 'action') {
+            this.proposeAction(route.request);
+            return false; // A private proposal is never an NPC message.
+        }
+        const topic = route.topic;
         // The player's explicit statement is remembered even if the response fails or they leave.
         if (topic === 'accusation' && !this.npcMemories.some(event => event.npcId === definition.npcId && event.kind === 'accused')) {
             this.npcMemories = [...this.npcMemories, { kind: 'accused', npcId: definition.npcId,
@@ -133,30 +151,65 @@ export class GameSession {
     }
     closeDialogue(): void {
         ++this.requestGeneration; // A late reply must not enter a later conversation or grant testimony.
-        if (this.view.conversation) this.publish({ conversation: null });
+        if (this.view.conversation) {
+            this.actions.clear();
+            this.publish({ conversation: null, pendingAction: null, actionError: '' });
+        }
     }
     openCaseOffer(id: string): boolean {
+        if (this.view.pendingAction) return false;
         if (!this.view.notebookOpen || this.view.conversation || !Object.prototype.hasOwnProperty.call(this.world.cases, id)
             || this.cases[id]?.status === 'active') return false;
-        this.publish({ caseOfferId: id });
+        this.publish({ caseOfferId: id, actionError: '' });
         return true;
     }
-    acceptCase(id: string): boolean {
-        if (!this.view.notebookOpen || this.view.conversation || !Object.prototype.hasOwnProperty.call(this.world.cases, id)) return false;
-        if (this.cases[id]?.status === 'active') return true; // Repeated clicks preserve the original acceptance.
-        if (this.view.caseOfferId !== id) return false;
-        this.cases = { ...this.cases, [id]: { status: 'active', history: [{ kind: 'accepted', recordedAt: Date.now() }] } };
-        this.publish({ cases: casebookEntries(this.world.cases, this.cases), caseOfferId: null,
+    private actionContext(): CaseActionContext {
+        return { saved: this.getSave(), offerId: this.view.caseOfferId,
+            notebookOpen: this.view.notebookOpen, inConversation: this.view.conversation !== null };
+    }
+    requestCaseAcceptance(id: string): boolean {
+        if (!Object.prototype.hasOwnProperty.call(this.world.cases, id)) return false;
+        return this.proposeAction({ kind: 'accept-assignment', caseId: id, recipientId: this.world.cases[id].clientId });
+    }
+    proposeAction(request: ActionRequest): boolean {
+        if (this.view.pendingAction || this.view.conversation?.pending) return false;
+        const result = this.actions.propose(this.actionContext(), request);
+        if (!result.ok) { this.publish({ actionError: result.reason }); return false; }
+        this.publish({ pendingAction: this.actions.getPending(), actionError: '' });
+        return true;
+    }
+    confirmAction(token: symbol): boolean {
+        if (this.view.pendingAction?.token !== token) return false;
+        const result = this.actions.confirm(token, this.actionContext(), Date.now());
+        if (!result.ok) {
+            this.publish({ pendingAction: null, actionError: result.reason });
+            return false;
+        }
+        // Prepare first, then commit every affected field synchronously before a single publish.
+        // The policy returns a complete candidate snapshot; no partial effects or async writes.
+        const next = result.state.saved;
+        this.cases = next.cases; this.discoveries = next.discoveries;
+        this.npcMemories = next.npcMemories; this.player = next.player;
+        this.publish({ pendingAction: null, actionError: '', cases: casebookEntries(this.world.cases, this.cases), caseOfferId: null,
             message: 'Assignment accepted. Recorded in the casebook.' });
         return true;
     }
+    cancelAction(token: symbol): boolean {
+        if (!this.actions.cancel(token)) return false;
+        this.publish({ pendingAction: null, actionError: '' });
+        return true;
+    }
     deferCase(id: string): boolean {
+        if (this.view.pendingAction) return false;
         if (!this.view.notebookOpen || this.view.caseOfferId !== id || this.cases[id]?.status === 'active') return false;
         // Deferral is not withdrawal. No durable change; this offer remains available.
         this.publish({ notebookOpen: false, caseOfferId: null });
         return true;
     }
     toggleNotebook(): void {
-        if (!this.view.conversation) this.publish({ notebookOpen: !this.view.notebookOpen, caseOfferId: null });
+        if (!this.view.conversation) {
+            this.actions.clear();
+            this.publish({ notebookOpen: !this.view.notebookOpen, caseOfferId: null, pendingAction: null, actionError: '' });
+        }
     }
 }

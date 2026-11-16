@@ -6,6 +6,7 @@ export function validateWorld(world: WorldDefinition): void {
     for (const [id, definition] of Object.entries(world.cases)) {
         if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) || id === 'constructor' || id === 'prototype'
             || definition.id !== id || !definition.title.trim() || !definition.client.trim()
+            || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(definition.clientId)
             || !definition.offer.trim() || !definition.assignment.trim()) throw new Error(`Invalid case definition: ${id}`);
     }
     const ids = new Set<string>();

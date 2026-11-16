@@ -1,3 +1,5 @@
+import type { PendingAction } from './actions.ts';
+
 export type LocationId = 'lobby' | 'staircase' | 'hallway' | 'room407';
 export type Facing = -1 | 1;
 export interface Point { readonly x: number; readonly y: number }
@@ -34,6 +36,7 @@ export interface NpcMemoryEvent {
 export interface CaseDefinition {
     readonly id: string;
     readonly title: string;
+    readonly clientId: string;
     readonly client: string;
     readonly offer: string;
     readonly assignment: string;
@@ -91,6 +94,8 @@ export interface Conversation {
     readonly error: string;
 }
 export interface ViewState {
+    readonly pendingAction: PendingAction | null;
+    readonly actionError: string;
     readonly locationId: LocationId;
     readonly nearby: Interaction | null;
     readonly notebookOpen: boolean;

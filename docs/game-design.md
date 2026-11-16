@@ -1,15 +1,15 @@
 # Dead End — Game Design
 
-Planning baseline: November 15, 2026; updated for the approved M1 implementation. Later planned systems remain unimplemented. Read with [Chapter 1](chapter-1-bellweather.md), the [implementation plan](chapter-1-implementation-plan.md), existing [architecture](architecture.md), and [contributor instructions](../AGENTS.md).
+Planning baseline: November 15, 2026; updated for the approved M1 and M2 implementations. Later planned systems remain unimplemented. Read with [Chapter 1](chapter-1-bellweather.md), the [implementation plan](chapter-1-implementation-plan.md), existing [architecture](architecture.md), and [contributor instructions](../AGENTS.md).
 
 ## Status and decision authority
 
 - **Established direction:** requirements supplied in the Chapter 1 planning brief, including its mystery and four outcomes. They supersede the former prototype's absence of story canon.
-- **Implemented:** the exploration/free-form conversation baseline from `main` at `4d5efea`, plus M1 case acceptance on `feat/chapter-1-foundation`. These are explicitly identified below.
+- **Implemented:** the exploration/free-form conversation baseline from `main` at `4d5efea`, plus M1 case acceptance and M2 action confirmation on `feat/chapter-1-foundation`. These are explicitly identified below.
 - **Proposed:** implementation choices, connective story details, locations beyond the hotel, and pacing. These require review before gameplay implementation.
 - **Open:** decisions without an agreed answer. A proposed answer is not approval.
 
-The planning documents retain the future chapter proposal. `architecture.md` records the implemented contracts. Only M1 is approved for this implementation; proposed evidence placement and withdrawal checkpoints remain open. The long-term preference is in-world case reopening rather than save rewind.
+The planning documents retain the future chapter proposal. `architecture.md` records the implemented contracts. M1 and M2 are implemented; M3 and later remain unapproved for implementation; proposed evidence placement and withdrawal checkpoints remain open. The long-term preference is in-world case reopening rather than save rewind.
 
 ## Concept and tone
 
@@ -50,7 +50,7 @@ For Case 001, A (contract fulfilled), B (Daniel protected), and C (operation exp
 
 ## Casebook, assignments, and consequences
 
-M1 implements available and active assignments alongside global field notes, with an explicit Evelyn contact request and one timestamped acceptance event per case. Deferring leaves the offer available and returns to exploration. Reading or accepting the offer does not add evidence, interpret clues or start a resolution. The request is client testimony, not verified fact.
+M1 implements available and active assignments alongside global field notes, with an explicit Evelyn contact request and one timestamped acceptance event per case. Deferring leaves the offer available and returns to exploration. Reading or accepting the offer does not add evidence, interpret clues or start a resolution. The request is client testimony, not verified fact. M2 adds an explicit confirmation after selecting Accept: Cancel leaves the offer unchanged, while Confirm records acceptance once. Pending decisions are not saved.
 
 For later milestones, evolve the casebook further. Retain a general field-notes view alongside active, withdrawn, and completed/resolved investigations. Players see observations, witness accounts and sources, relevant people, alleged event times, their own interpretations, assignment history, final disposition, and later learned consequences. Do not expose undiscovered case associations or hidden solutions through headings or record counts.
 
@@ -76,6 +76,8 @@ This checkpoint policy is an unapproved alternative, not an implementation requi
 
 ## NPCs and free-form conversation
 
+**M2 prototype boundary:** arbitrary text may be typed, but only supported whole-message ordinary phrases reach the receptionist. Unknown or potentially consequential messages remain private and prompt clarification before any NPC context update. Authored disclosure routing is tested with noncanonical fixtures only; no live reporting or other future case action is available. The existing exact accusation-memory demonstration is preserved. The long-term free-form design below still needs authored content and a reliable interpretation boundary.
+
 Important NPCs accept typed questions and statements. Their authored profiles distinguish facts known personally, beliefs, uncertainty, motivations, relationships, intentional lies, and observations of the detective. They may lie, evade, misunderstand, or misremember. They recognize meaningful follow-ups and repeated topics, without automatically confessing when contradicted. Background characters may remain entirely scripted.
 
 Persist significant events and authored topic history rather than every chat message. An NPC can react only to information they observed, were told, or learned through a defined communication event. Evelyn cannot detect that the player read a document in Room 407 merely because a global discovery flag changed. No numerical trust/relationship simulation is required for the first case.
@@ -92,13 +94,13 @@ Inspected November 15, 2026:
 | --- | --- |
 | Phaser 4.0.0 / React 19.1.0 / TypeScript 5.7.3 / Vite 6.3.2 | Existing scaffold and configuration retained; no new engine or state library proposed |
 | Four connected hotel spaces, named entries, collisions, camera, Detective V2 | No office, street, refuge, inventory, mutable locks, or NPC schedules |
-| Free-form receptionist conversation with mock adapter | Keywords route existing account/room responses; no general language understanding or AI provider |
+| Typed receptionist conversation with mock adapter and M2 pre-dispatch gate | Only supported whole-message phrases are sent; unknown wording stays private for clarification, including benign paraphrases. No general language understanding or AI provider |
 | Typed first-accusation memory | Whole “I accuse you” / “I accuse the receptionist” statement only, normalized whitespace/case, optional final `.` or `!`; criticism, questions and longer accusations do not match |
 | Conversation input/focus isolation, pending/error handling, late-reply guard | Transcript capped at 80 lines and cleared on exit/reload; message limit 2,000 characters; no persistent topic history |
 | Three Room 407 observations plus one attributed receptionist account | No suitcase, register, ledger, theory comparison, verified-fact graph, or outcomes |
 | Public Evelyn offer, explicit accept/defer, stable case-state map, timestamped acceptance history | One shipped assignment; no withdrawal, reopening, resolution, payment, or chapter unlocking |
 | Local save schema v3, v1/v2 migration, preserved unreadable saves | Saves hold player, discoveries, NPC memories and cases; no chapter state, checkpoint UI, export/import or recovery UI |
-| 50 automated tests across cases, exploration, conversation and animation | Case commands, discovery independence, migration, persistence and input policy are covered; future outcomes/progression remain unimplemented |
+| 59 automated tests across actions, cases, exploration, conversation and animation | Action propose/confirm/cancel, disclosure fixtures, case commands, discovery independence, migration, persistence and input policy are covered; future outcomes/progression remain unimplemented |
 
 Normal movement checkpoints every two seconds; meaningful state changes also save. Storage is one browser-origin slot with historical key `dead-end.bellweather.v1`; schema version is inside the envelope. Case knowledge must remain separate from generated conversation text as the model expands.
 

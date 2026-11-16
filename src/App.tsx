@@ -1,15 +1,17 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { PhaserGame } from './PhaserGame';
 import { initialSaveWarning, session, startSaving } from './runtime';
 import { Notebook } from './ui/Notebook';
 import { casebookKeyAction, nextFocusIndex } from './ui/casebookInput';
 import { Dialogue } from './ui/Dialogue';
+import { Confirmation } from './ui/Confirmation';
 
 const movementKeys = new Set(['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
 function App() {
     const view = useSyncExternalStore(session.subscribe, session.getSnapshot);
     const [saveWarning, setSaveWarning] = useState(initialSaveWarning);
+    const confirmationUnderlay = useRef<HTMLDivElement>(null);
     const location = session.world.locations[view.locationId];
 
     useEffect(() => startSaving(setSaveWarning), []);
@@ -18,6 +20,8 @@ function App() {
             if (event.ctrlKey || event.altKey || event.metaKey) return;
             const state = session.getSnapshot();
             const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+            // The top confirmation owns all keys; underlying UI is inert and Phaser stays blocked.
+            if (state.pendingAction) return;
             // Let the conversation own typing, repeats, Tab and Enter. Phaser input is disabled.
             if (state.conversation) {
                 if (key === 'Escape' && !event.isComposing) {
@@ -63,7 +67,7 @@ function App() {
                 <PhaserGame />
                 <div className="world-hud">
                     <div><span className="eyebrow">{location.floor}</span><h2>{location.name}</h2></div>
-                    <button className="notebook-button" onClick={() => session.toggleNotebook()} disabled={!!view.conversation} aria-keyshortcuts="Tab">
+                    <button className="notebook-button" onClick={() => session.toggleNotebook()} disabled={!!view.conversation || !!view.pendingAction} aria-keyshortcuts="Tab">
                         <span>Casebook <span className="entry-count">{view.entries.length}</span></span><kbd>Tab</kbd>
                     </button>
                 </div>
@@ -73,8 +77,12 @@ function App() {
                         : <p className="interaction quiet">{session.isBlocked() ? 'Investigation paused' : 'Walk closer to examine or speak'}</p>}
                     <p className="observation">{view.message}</p>
                 </div>
-                {view.notebookOpen && <Notebook entries={view.entries} cases={view.cases} offerId={view.caseOfferId} />}
-                {view.conversation && <Dialogue conversation={view.conversation} />}
+                <div ref={confirmationUnderlay}>
+                    {view.notebookOpen && <Notebook entries={view.entries} cases={view.cases} offerId={view.caseOfferId} actionError={view.actionError} />}
+                    {view.conversation && <Dialogue conversation={view.conversation} />}
+                </div>
+                {view.pendingAction && <Confirmation action={view.pendingAction} underlay={confirmationUnderlay}
+                    onConfirm={token => session.confirmAction(token)} onCancel={token => session.cancelAction(token)} />}
             </section>
             <footer className="controls"><span><kbd>WASD</kbd> / <kbd>↑ ↓ ← →</kbd> Move <i>·</i> <kbd>E</kbd> Interact <i>·</i> <kbd>Tab</kbd> Casebook</span><span>Local autosave · Keyboard play</span></footer>
             {saveWarning && <p className="save-warning" role="status">{saveWarning}</p>}

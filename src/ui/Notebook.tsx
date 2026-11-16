@@ -2,10 +2,11 @@ import { useEffect, useRef } from 'react';
 import type { CasebookEntry, KnowledgeRecord } from '../core/model';
 import { session } from '../runtime';
 
-export function Notebook({ entries, cases, offerId }: {
+export function Notebook({ entries, cases, offerId, actionError }: {
     entries: readonly KnowledgeRecord[];
     cases: readonly CasebookEntry[];
     offerId: string | null;
+    actionError: string;
 }) {
     const close = useRef<HTMLButtonElement>(null);
     const defer = useRef<HTMLButtonElement>(null);
@@ -24,6 +25,7 @@ export function Notebook({ entries, cases, offerId }: {
             onKeyDown={event => event.stopPropagation()} onKeyUp={event => event.stopPropagation()}>
             <header className="panel-heading"><div><span className="eyebrow">PRIVATE & CONFIDENTIAL</span><h2 id="notebook-title">{offer ? 'Client request' : 'Casebook'}</h2></div><button ref={close} onClick={() => session.toggleNotebook()}>Close <kbd>{offer ? 'Esc' : 'Tab'}</kbd></button></header>
             <div id="notebook-pages" className="casebook-pages">
+                {actionError && <p role="status">{actionError}</p>}
                 {offer ? <article className="case-offer">
                     <span className="record-kind">AVAILABLE ASSIGNMENT</span>
                     <h3>{offer.title}</h3>
@@ -34,7 +36,7 @@ export function Notebook({ entries, cases, offerId }: {
                     <p>You can leave this request for later and continue exploring.</p>
                     <div className="case-actions">
                         <button ref={defer} onClick={() => session.deferCase(offer.id)}>Defer for now</button>
-                        <button onClick={() => session.acceptCase(offer.id)}>Accept assignment</button>
+                        <button onClick={() => session.requestCaseAcceptance(offer.id)}>Accept assignment</button>
                     </div>
                 </article> : <>
                     <section className="assignments" aria-label="Assignments">

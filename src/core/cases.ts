@@ -5,7 +5,7 @@ export function casebookEntries(definitions: Readonly<Record<string, CaseDefinit
     states: Readonly<Record<string, CaseState>>): readonly CasebookEntry[] {
     return Object.values(definitions).map(definition => {
         const state = Object.prototype.hasOwnProperty.call(states, definition.id) ? states[definition.id] : undefined;
-        return { id: definition.id, title: definition.title, client: definition.client,
+        return { id: definition.id, title: definition.title, clientId: definition.clientId, client: definition.client,
             offer: definition.offer, assignment: definition.assignment,
             status: state?.status ?? 'available', history: state?.history.map(event => ({ ...event })) ?? [] };
     });

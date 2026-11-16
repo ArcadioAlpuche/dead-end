@@ -1,6 +1,6 @@
 # Chapter 1 — Architecture Assessment and Implementation Plan
 
-Planning baseline November 15, 2026, updated for M1 implementation. **M1 only is approved and implemented on `feat/chapter-1-foundation`; M2 and later remain proposals.** Read the [game design](game-design.md) and [Chapter 1 content proposal](chapter-1-bellweather.md) together before approving work. The existing [architecture document](architecture.md) describes the current system; this file records how to extend it without replacing the scaffold.
+Planning baseline November 15, 2026, updated for M1 and M2 implementation. **M1 and M2 are approved and implemented on `feat/chapter-1-foundation`; M3 and later remain proposals.** Read the [game design](game-design.md) and [Chapter 1 content proposal](chapter-1-bellweather.md) together before approving work. The existing [architecture document](architecture.md) describes the current system; this file records how to extend it without replacing the scaffold.
 
 ## Repository preparation and inspected baseline
 
@@ -66,7 +66,7 @@ Payment, primary disposition, consequence scheduling and earned credit must comm
 
 Checkpoint restore is deliberate and atomic, restoring all related state, not only a case status. Keep the current run until restore succeeds; report storage/quota failure. If a promised pre-withdrawal recovery cannot be stored, do not offer a falsely recoverable withdrawal—retain the assignment and explain the problem. No new persistence library is necessary initially.
 
-## Approval gate for M2 and later
+## Approval gate for M3 and later
 
 Approve the chapter's proposed timeline, minimal refuge, document provenance, B safety action, C exposure rule, and branch-conflict policy. The exact wording and IDs of evidence should be settled before coding those records. Evidence placement and the withdrawal checkpoint mechanism remain unapproved. The long-term preference is in-world reopening rather than save rewind; settle that design before M8. This gate does not require choosing a city name, AI vendor, final chapter count, or final artwork.
 
@@ -74,7 +74,7 @@ Approve the chapter's proposed timeline, minimal refuge, document provenance, B 
 
 ## M1 — Case acceptance and persistent casebook foundation
 
-**Implemented:** `content/cases.ts` contains only the public `case-001` offer. The existing casebook opens a minimal Evelyn contact panel, with Defer initially focused and explicit Accept. Deferring or closing leaves it available; acceptance writes one event and leaves existing field notes unchanged. Saves use v3 with a map of independent case states; v1/v2 migrate without inferring acceptance. No office or new world interactions are needed. The main casebook retains Tab to close, Left/Right selects controls, and Up/Down scrolls; the request uses Tab/Shift+Tab focus navigation and Escape to leave. No general action-confirmation framework, world/progression placeholders, or M2 mechanics were added.
+**Implemented:** `content/cases.ts` contains only the public `case-001` offer. The existing casebook opens a minimal Evelyn contact panel, with Defer initially focused and explicit Accept. Deferring or closing leaves it available; acceptance writes one event and leaves existing field notes unchanged. Saves use v3 with a map of independent case states; v1/v2 migrate without inferring acceptance. No office or new world interactions are needed. The main casebook retains Tab to close, Left/Right selects controls, and Up/Down scrolls; the request uses Tab/Shift+Tab focus navigation and Escape to leave. M1 originally added no action-confirmation framework or world/progression placeholders. M2 now wraps acceptance with the narrow workflow below.
 
 **Verification:** nine new case/input tests plus the existing 41 tests cover this scope; TypeScript/build and browser smoke checks are reported with the implementation. The two-case fixture is test content only.
 
@@ -87,6 +87,12 @@ Approve the chapter's proposed timeline, minimal refuge, document provenance, B 
 - **Relevant tests:** v1/v2 migration fixtures, unsupported saves preserved, before/after-acceptance discovery, repeat acceptance, independent case maps, round-trip without reopening modals, keyboard/focus smoke test.
 
 ## M2 — Confirmed action boundary
+
+**Implemented November 16, 2026:** typed requests, recipient/information previews, transient one-use tokens, revalidation, pure candidate-state preparation and one session commit. Acceptance is the only enabled game action; the casebook's Accept button proposes it, then a Cancel-first modal requires a distinct Confirm. Schema v3 and M1 history remain unchanged. Reload, context exit, cancel, duplicate input, wrong recipients and stale eligibility cannot create acceptance.
+
+The conversation boundary runs before all NPC dispatch/history/memory changes. Known ordinary phrases use whole-message matches; everything else is withheld for clarification. Trusted disclosure phrase routing and atomic effects are exercised only by noncanonical tests, with no live disclosure catalog or story outcomes. This intentionally reduces the mock's previously unrestricted text forwarding; benign unknown questions may also be blocked. Explicit casebook acceptance remains available. No M3 NPC profiles or additional hotel content were added. See [architecture](architecture.md) for the boundary, exact limits and future extension requirements.
+
+Nine M2 tests supplement the existing 50; M1 tests now confirm acceptance through the new workflow. Browser checks cover Cancel focus, keyboard trapping/repeats, reload pending, actual acceptance, private unsent messages and preserved exploration.
 
 - **Objective:** Make deliberate world-changing actions reviewable and safe to cancel before any ending is introduced.
 - **Scope:** Reuse acceptance to exercise propose/confirm/cancel; introduce recipient/disclosure previews and guard against stale/duplicate actions. Test other action types with non-story fixtures, not live outcome buttons.

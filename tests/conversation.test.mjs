@@ -40,11 +40,13 @@ test('Enter submits once, Shift+Enter and composition edit, ordinary game keys r
     }
 });
 
-test('arbitrary multiline messages stay transient; blank/long/out-of-conversation submissions are rejected', async () => {
+test('supported multiline messages stay transient; unknown text is not sent; blank/long/out-of-conversation submissions are rejected', async () => {
     const session = open();
     assert.equal(await session.submitMessage('  '), false);
     assert.equal(await session.submitMessage('x'.repeat(MAX_MESSAGE_LENGTH + 1)), false);
-    assert.equal(await session.submitMessage('A question\nand a statement. <script>not code</script>'), true);
+    assert.equal(await session.submitMessage('A question\nand a statement. <script>not code</script>'), false);
+    assert.equal(session.getSnapshot().conversation.history.length, 1);
+    assert.equal(await session.submitMessage('Hello\nagain.'), true);
     assert.match(session.getSnapshot().conversation.history[1].text, /\n/);
     assert.equal(session.getSave().npcMemories.length, 0);
     assert.equal(session.getSnapshot().entries.length, 0);

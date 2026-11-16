@@ -14,12 +14,12 @@ Open the local URL printed by Vite (normally `http://localhost:8080`). Use a des
 
 - **WASD / arrows:** move across the floor and its shallow depth.
 - **E:** interact with the nearby highlighted target.
-- **Enter:** send a typed NPC message; **Shift+Enter:** new line. Try asking about last night or Room 407. The exact statement “I accuse you.” demonstrates persistent NPC memory.
+- **Enter:** send a typed NPC message; **Shift+Enter:** new line. Try “What did you see last night?” or “Tell me about Room 407.” Unknown wording stays private and prompts clarification. The exact statement “I accuse you.” demonstrates persistent NPC memory.
 - **Tab:** open/close the casebook. **Escape:** close it or leave dialogue.
 - **Up / down in the casebook:** scroll; **Left / right:** focus controls; **Enter:** activate.
-- **In a client request:** **Tab / Shift+Tab** cycles controls; choose **Accept assignment** or **Defer for now**. Escape leaves without accepting.
+- **In a client request:** **Tab / Shift+Tab** cycles controls; choose **Accept assignment** or **Defer for now**. Escape leaves without accepting. Accept opens a confirmation: Cancel is focused first, Tab selects Confirm, and Enter activates the focused control.
 
-Explore the lobby, staircase, fourth-floor hallway, and unlocked Room 407. Speak to the receptionist and examine the champagne glass, folded note, and bed. Stair travel abbreviates three flights. The notebook separates direct observations from unverified testimony. Exploration never requires a case. Open the casebook and read Evelyn Mercer's request to locate her missing brother. Accepting records the assignment and its acceptance time; deferring leaves it available. Existing observations/testimony remain global field notes without automatic interpretation.
+Explore the lobby, staircase, fourth-floor hallway, and unlocked Room 407. Speak to the receptionist and examine the champagne glass, folded note, and bed. Stair travel abbreviates three flights. The notebook separates direct observations from unverified testimony. Exploration never requires a case. Open the casebook and read Evelyn Mercer's request to locate her missing brother. Only confirming acceptance records the assignment and its acceptance time; deferring leaves it available. Existing observations/testimony remain global field notes without automatic interpretation.
 
 Progress saves locally in the same browser origin. Movement checkpoints occur every two seconds; discoveries, significant NPC memories, case acceptance, and completed transitions save immediately. Existing v1/v2 saves migrate to v3 while retaining position, discoveries, timestamps and NPC memories. Conversation transcripts are temporary and clear on exit/reload. Unreadable saves are preserved, with an unsaved playable session and a visible notice. There is no in-game reset/recovery UI yet. `localhost` and `127.0.0.1` have separate saves.
 
@@ -37,7 +37,7 @@ The implementation uses structured content in `src/content/hotel.ts`, framework-
 
 The approved Simplified Detective V2 is enabled: a seven-frame walking loop at 8 FPS and static frame-zero idle. The original detective assets and configuration remain available through the development configuration switch. The geometry placeholder remains the fallback for missing or invalid required sheets. See [the character animation asset contract](docs/character-animation.md) for configuration and known artwork issues.
 
-This implements M1 acceptance only: no withdrawal/reopening, resolutions, payments, chapter unlocking, item collection, AI, backend, gambling, audio, or touch controls. The original template build configuration and dependencies are preserved.
+This implements M1 acceptance and M2 confirmation only: no withdrawal/reopening, resolutions, payments, chapter unlocking, item collection, AI, backend, gambling, audio, or touch controls. The original template build configuration and dependencies are preserved.
 
 ---
 

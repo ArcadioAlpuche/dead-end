@@ -7,6 +7,10 @@ import { parseSave, validateWorld } from '../src/core/validation.ts';
 import { loadLocal, saveLocal, SAVE_KEY } from '../src/persistence/localSave.ts';
 import { casebookKeyAction, nextFocusIndex } from '../src/ui/casebookInput.ts';
 
+function accept(session, id) {
+    if (!session.requestCaseAcceptance(id)) return false;
+    return session.confirmAction(session.getSnapshot().pendingAction.token);
+}
 function offer(session, id = 'case-001') {
     if (!session.getSnapshot().notebookOpen) session.toggleNotebook();
     assert.equal(session.openCaseOffer(id), true);
@@ -25,10 +29,10 @@ test('a request is explicit and deferring leaves exploration and the offer avail
     const session = new GameSession(hotel);
     const before = session.getSave();
     assert.equal(session.getSnapshot().cases[0].status, 'available');
-    assert.equal(session.acceptCase('case-001'), false);
+    assert.equal(accept(session, 'case-001'), false);
     assert.equal(session.openCaseOffer('case-001'), false);
     session.toggleNotebook();
-    assert.equal(session.acceptCase('case-001'), false, 'Must read the offer first');
+    assert.equal(accept(session, 'case-001'), false, 'Must read the offer first');
     assert.equal(session.openCaseOffer('missing'), false);
     offer(session);
     assert.equal(session.isBlocked(), true);
@@ -53,7 +57,9 @@ test('acceptance records exactly one timestamped event, even on repeated command
     const session = new GameSession(hotel);
     offer(session);
     const start = Date.now();
-    assert.equal(session.acceptCase('case-001'), true);
+    assert.equal(session.requestCaseAcceptance('case-001'), true);
+    const token = session.getSnapshot().pendingAction.token;
+    assert.equal(session.confirmAction(token), true);
     const saved = session.getSave();
     const state = saved.cases['case-001'];
     assert.equal(state.status, 'active');
@@ -62,7 +68,7 @@ test('acceptance records exactly one timestamped event, even on repeated command
     assert.ok(state.history[0].recordedAt >= start && state.history[0].recordedAt <= Date.now());
     let publishes = 0;
     session.subscribe(() => publishes++);
-    for (let i = 0; i < 3; i++) assert.equal(session.acceptCase('case-001'), true);
+    for (let i = 0; i < 3; i++) assert.equal(session.confirmAction(token), false);
     assert.equal(publishes, 0);
     assert.deepEqual(session.getSave(), saved);
     assert.equal(session.openCaseOffer('case-001'), false);
@@ -77,7 +83,7 @@ test('evidence exists before acceptance and stays unique, unchanged and visible 
     for (const id of ['lobby-stairs', 'stairs-fourth', 'hall-407', 'glass']) interact(session, id);
     const discoveries = session.getSave().discoveries;
     const entries = session.getSnapshot().entries;
-    offer(session); session.acceptCase('case-001');
+    offer(session); accept(session, 'case-001');
     assert.deepEqual(session.getSave().discoveries, discoveries);
     assert.deepEqual(session.getSnapshot().entries, entries);
     session.toggleNotebook();
@@ -89,15 +95,15 @@ test('evidence exists before acceptance and stays unique, unchanged and visible 
 
 test('independent case fixtures survive reload without overwriting each other', () => {
     const world = { ...hotel, cases: { ...hotel.cases,
-        'fixture-002': { id: 'fixture-002', title: 'Test assignment', client: 'Test client', offer: 'Test offer', assignment: 'Test only' } } };
+        'fixture-002': { id: 'fixture-002', title: 'Test assignment', clientId: 'test-client', client: 'Test client', offer: 'Test offer', assignment: 'Test only' } } };
     assert.doesNotThrow(() => validateWorld(world));
     const session = new GameSession(world);
-    offer(session); session.acceptCase('case-001');
+    offer(session); accept(session, 'case-001');
     const first = session.getSave().cases['case-001'];
     offer(session, 'fixture-002'); session.deferCase('fixture-002');
     assert.equal(session.getSnapshot().cases[1].status, 'available');
     assert.deepEqual(session.getSave().cases['case-001'], first);
-    offer(session, 'fixture-002'); session.acceptCase('fixture-002');
+    offer(session, 'fixture-002'); accept(session, 'fixture-002');
     const storage = storageWith();
     assert.ok(saveLocal(storage, session));
     const restored = new GameSession(world, loadLocal(storage, world).saved);
@@ -118,7 +124,7 @@ for (const version of [1, 2]) test(`v${version} migration preserves existing sta
     assert.equal(storage.data.get(SAVE_KEY), JSON.stringify(old), 'Reading does not write');
     assert.deepEqual(loaded.saved, { ...old, version: 3, npcMemories: old.npcMemories ?? [], cases: {} });
     const session = new GameSession(hotel, loaded.saved);
-    offer(session); session.acceptCase('case-001');
+    offer(session); accept(session, 'case-001');
     assert.ok(saveLocal(storage, session));
     const restored = new GameSession(hotel, loadLocal(storage, hotel).saved);
     assert.deepEqual(restored.getPlayer(), old.player);
@@ -152,7 +158,7 @@ test('invalid case saves and future schemas are protected without destructive wr
 test('public casebook selector exposes only offer fields, status and acceptance history', () => {
     const definition = { ...hotel.cases['case-001'], hiddenSolution: 'Not player knowledge' };
     const entries = casebookEntries({ 'case-001': definition }, {});
-    assert.deepEqual(Object.keys(entries[0]).sort(), ['assignment', 'client', 'history', 'id', 'offer', 'status', 'title']);
+    assert.deepEqual(Object.keys(entries[0]).sort(), ['assignment', 'client', 'clientId', 'history', 'id', 'offer', 'status', 'title']);
     const malformed = { ...hotel, cases: { wrong: definition } };
     assert.throws(() => validateWorld(malformed));
 });

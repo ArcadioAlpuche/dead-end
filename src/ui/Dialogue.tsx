@@ -17,8 +17,11 @@ export function Dialogue({ conversation }: { conversation: Conversation }) {
     useEffect(() => { log.current?.scrollTo({ top: log.current.scrollHeight }); }, [conversation.history]);
     const submit = () => {
         if (conversation.pending || !draft.trim()) return;
-        void session.submitMessage(draft);
-        setDraft('');
+        const submitted = draft;
+        void session.submitMessage(submitted).then(sent => {
+            // Clarification leaves the unsent draft editable, outside NPC history/context.
+            if (sent) setDraft(current => current === submitted ? '' : current);
+        });
         input.current?.focus();
     };
     return <div className="modal-scrim dialogue-scrim">
@@ -46,6 +49,7 @@ export function Dialogue({ conversation }: { conversation: Conversation }) {
                         if (action !== 'edit') { event.preventDefault(); if (action === 'submit') submit(); }
                     }} />
                 <p id="conversation-help" className="conversation-help">Enter to send · Shift+Enter for a new line · Esc to leave</p>
+                <p className="conversation-help">Supported phrases only for now. Unrecognized messages stay private. Try “What did you see last night?” or “Tell me about Room 407.”</p>
                 <p role="status" className="conversation-status">{conversation.pending ? 'Waiting for a reply…' : conversation.error}</p>
                 <div className="dialogue-actions">
                     <button type="button" className="text-button" onClick={() => session.closeDialogue()}>Leave conversation <kbd>Esc</kbd></button>
