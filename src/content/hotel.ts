@@ -6,18 +6,30 @@ import { npcConversations } from './npcs.ts';
 export const hotel: WorldDefinition = {
     cases,
     locations: {
+        town: {
+            id: 'town', presentation: 'overworld', name: 'Bellweather block', subtitle: 'TOWN EXTERIOR · PROTOTYPE', floor: 'STREET LEVEL', width: 1600,
+            walkBounds: { x: 30, y: 420, width: 1540, height: 255 },
+            entries: { arrival: { x: 260, y: 565, facing: 1 }, fromHotel: { x: 820, y: 565, facing: 1 } },
+            obstacles: [{ x: 449, y: 448, width: 22, height: 28 }, { x: 1249, y: 448, width: 22, height: 28 }],
+            props: [],
+            interactions: [
+                { id: 'town-hotel', kind: 'exit', label: 'Enter the Bellweather Hotel', x: 820, y: 455, destination: 'lobby', entry: 'fromTown' },
+            ],
+        },
         lobby: {
             id: 'lobby', name: 'The lobby', subtitle: 'BELLWEATHER HOTEL', floor: 'GROUND FLOOR', width: 1320,
             walkBounds: { x: 30, y: 500, width: 1260, height: 165 },
-            entries: { arrival: { x: 200, y: 590, facing: 1 }, fromStairs: { x: 1130, y: 555, facing: -1 } },
+            entries: { arrival: { x: 200, y: 590, facing: 1 }, fromTown: { x: 190, y: 550, facing: 1 }, fromStairs: { x: 1130, y: 555, facing: -1 } },
             obstacles: [{ x: 560, y: 500, width: 220, height: 45 }],
             props: [
-                { kind: 'window', x: 100, y: 220, width: 190, height: 240 },
-                { kind: 'window', x: 340, y: 220, width: 150, height: 240 },
+                { kind: 'door', x: 65, y: 300, width: 110, height: 200, label: 'STREET' },
+                { kind: 'window', x: 200, y: 220, width: 120, height: 240 },
+                { kind: 'window', x: 370, y: 220, width: 150, height: 240 },
                 { kind: 'desk', x: 560, y: 435, width: 220, height: 110, label: 'RECEPTION' },
                 { kind: 'door', x: 1115, y: 300, width: 110, height: 200, label: 'STAIRS' },
             ],
             interactions: [
+                { id: 'lobby-town', kind: 'exit', label: 'Leave for the street', x: 120, y: 540, destination: 'town', entry: 'fromHotel' },
                 { id: 'receptionist', kind: 'talk', label: 'Talk to the receptionist', x: 670, y: 575, conversationId: 'reception' },
                 { id: 'lobby-stairs', kind: 'exit', label: 'Enter the staircase', x: 1170, y: 540, destination: 'staircase', entry: 'fromLobby' },
             ],

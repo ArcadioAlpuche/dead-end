@@ -93,7 +93,7 @@ Inspected November 15, 2026:
 | Implemented | Limits |
 | --- | --- |
 | Phaser 4.0.0 / React 19.1.0 / TypeScript 5.7.3 / Vite 6.3.2 | Existing scaffold and configuration retained; no new engine or state library proposed |
-| Four connected hotel spaces, named entries, collisions, camera, Detective V2 | No office, street, refuge, inventory, mutable locks, or NPC schedules |
+| Four connected hotel spaces plus one placeholder exterior block, named entries, collisions, camera, interior Detective V2 and a small directional overworld drawing | No full town, office, refuge, inventory, mutable locks, or NPC schedules |
 | Authored Arthur/Thomas/Evelyn profiles, mock adapter and M2 pre-dispatch gate | Arthur is the only physically accessible NPC; supported topic paraphrases and follow-ups work, while unsupported wording stays private. No general language understanding or AI provider |
 | Typed first-accusation memory | Whole “I accuse you” / “I accuse the receptionist” statement only, normalized whitespace/case, optional final `.` or `!`; criticism, questions and longer accusations do not match |
 | Conversation input/focus isolation, pending/error handling, late-reply guard | Transcript capped at 80 lines and cleared on exit/reload; message limit 2,000 characters; typed topic/statement and limited irritation memory persists |

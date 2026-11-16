@@ -1,6 +1,6 @@
 import type { PendingAction } from './actions.ts';
 
-export type LocationId = 'lobby' | 'staircase' | 'hallway' | 'room407';
+export type LocationId = 'town' | 'lobby' | 'staircase' | 'hallway' | 'room407';
 export type Facing = -1 | 1;
 export interface Point { readonly x: number; readonly y: number }
 export interface Rect extends Point { readonly width: number; readonly height: number }
@@ -82,6 +82,7 @@ export interface Prop extends Rect {
 }
 export interface LocationDefinition {
     readonly id: LocationId;
+    readonly presentation?: 'overworld';
     readonly name: string;
     readonly subtitle: string;
     readonly floor: string;

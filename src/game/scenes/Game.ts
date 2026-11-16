@@ -2,14 +2,16 @@ import { GameObjects, Input, Scene } from 'phaser';
 import { EventBus } from '../EventBus';
 import { session } from '../../runtime';
 import { drawLocation } from '../adapters/drawing';
-import { stepMovement } from '../adapters/movement';
+import { drawTown } from '../adapters/drawTown';
+import { INTERIOR_MOVEMENT, OVERWORLD_MOVEMENT, stepMovement } from '../adapters/movement';
 import { PlayerVisual } from '../characters/PlayerVisual';
+import { OverworldVisual } from '../characters/OverworldVisual';
 import { detectiveSpriteConfig } from '../characters/detective';
 import type { LocationId } from '../../core/model';
 
 export class Game extends Scene {
     private detective: GameObjects.Container;
-    private playerVisual: PlayerVisual;
+    private playerVisual: PlayerVisual | OverworldVisual;
     private keys: Record<string, Input.Keyboard.Key>;
     private locationId: LocationId;
     private motion = { vx: 0, vy: 0 };
@@ -22,13 +24,15 @@ export class Game extends Scene {
         this.locationId = session.getPlayer().locationId;
         this.transitioning = false;
         const location = session.world.locations[this.locationId];
-        drawLocation(this, location);
-        this.playerVisual = new PlayerVisual(this, detectiveSpriteConfig);
+        const overworld = location.presentation === 'overworld';
+        if (overworld) drawTown(this, location);
+        else drawLocation(this, location);
+        this.playerVisual = overworld ? new OverworldVisual(this) : new PlayerVisual(this, detectiveSpriteConfig);
         this.detective = this.playerVisual.body;
         const player = session.getPlayer();
         this.detective.setPosition(player.x, player.y).setDepth(player.y);
         this.playerVisual.update({ speed: 0, facing: player.facing, deltaMs: 0, paused: session.isBlocked() });
-        this.marker = this.add.ellipse(0, 0, 58, 18).setStrokeStyle(2, 0xd3b77c, 0.85).setDepth(498);
+        this.marker = this.add.ellipse(0, 0, overworld ? 40 : 58, 18).setStrokeStyle(2, 0xd3b77c, 0.85).setDepth(498);
         this.cameras.main.setBounds(0, 0, location.width, 768);
         this.cameras.main.startFollow(this.detective, true, 0.12, 1);
         this.cameras.main.centerOn(player.x, 384);
@@ -85,11 +89,13 @@ export class Game extends Scene {
         const x = Number(down('D') || down('RIGHT')) - Number(down('A') || down('LEFT'));
         const y = Number(down('S') || down('DOWN')) - Number(down('W') || down('UP'));
         const previous = session.getPlayer();
-        const player = stepMovement(session.world.locations[this.locationId], previous, this.motion, x, y, delta / 1000);
+        const location = session.world.locations[this.locationId];
+        const player = stepMovement(location, previous, this.motion, x, y, delta / 1000,
+            location.presentation === 'overworld' ? OVERWORLD_MOVEMENT : INTERIOR_MOVEMENT);
         session.moveTo(player);
         this.detective.setPosition(player.x, player.y).setDepth(player.y);
         const seconds = Math.min(Math.max(delta / 1000, 0), 0.05);
         const speed = seconds > 0 ? Math.hypot(player.x - previous.x, player.y - previous.y) / seconds : 0;
-        this.playerVisual.update({ speed, facing: player.facing, deltaMs: delta, paused: false });
+        this.playerVisual.update({ speed, facing: player.facing, deltaMs: delta, paused: false, axisX: x, axisY: y });
     }
 }
