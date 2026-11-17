@@ -12,6 +12,8 @@ The preview deliberately shows the current collision plan, not a proposed new lo
 
 The review-only spatial proposal for final art is in [lobby-production-layout.md](lobby-production-layout.md). It does not change this preview or the playable lobby.
 
+The separate [production export contract](lobby-production-assets.md) defines four exact-size layers and the opt-in `?lobbyPreview=1&production=1` test. Candidate exports are present for review; the preview reports any missing or wrong-size files without substituting the temporary images.
+
 ## Export contract
 
 - World canvas: **1320 × 768 world pixels**, origin `(0, 0)` at the top left. The game viewport is 1024 × 768, so horizontal camera panning reveals the whole lobby. Do not resize the canvas or change the global Phaser scale to fit one image.

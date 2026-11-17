@@ -7,6 +7,7 @@ import { E_STYLE_IDLE_PREVIEW, E_STYLE_IDLE_SCALE, createEStyleIdlePreview, queu
 import { eStyleWalkPreviewConfig } from '../src/game/characters/eStyleWalkPreview.ts';
 import { PlayerAnimationController } from '../src/game/characters/animation.ts';
 import { queueCharacterSprites, validSpriteConfig } from '../src/game/characters/spriteAssets.ts';
+import { resolveEStyleLobbyPreviewQuery } from '../src/game/eStyleLobbyPreviewQuery.ts';
 
 test('character preview is development-only and cannot replace a lobby preview', () => {
     assert.equal(resolveCharacterPreviewQuery('?characterPreview=1', true, false), true);
@@ -77,6 +78,12 @@ test('E-style image uses the provided foot position and rejects unavailable or w
     scene.textures.get = () => ({ getSourceImage: () => ({ width: 255, height: 256 }) });
     assert.equal(createEStyleIdlePreview(scene, 700, 620), null);
     assert.equal(images.length, 1);
+});
+
+test('E-style substitution requires the isolated production preview and explicit flag', () => {
+    assert.equal(resolveEStyleLobbyPreviewQuery('?lobbyPreview=1&production=1&kaneIdle=1', true), true);
+    assert.equal(resolveEStyleLobbyPreviewQuery('?lobbyPreview=1&production=1', true), false);
+    assert.equal(resolveEStyleLobbyPreviewQuery('?kaneIdle=1', false), false);
 });
 
 test('E-style walk is six consecutive cells using the approved idle, scale and sole anchor', () => {

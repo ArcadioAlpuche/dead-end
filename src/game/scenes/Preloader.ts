@@ -2,7 +2,8 @@ import { Scene } from 'phaser';
 import { detectiveSpriteConfig, simplifiedDetectiveSpriteConfig } from '../characters/detective';
 import { queueCharacterSprites } from '../characters/spriteAssets';
 import { queueLobbyArt } from '../adapters/lobbyArt';
-import { lobbyPreviewMode, lobbyReferenceMode } from '../lobbyPreviewMode';
+import { queueLobbyProductionArt } from '../adapters/lobbyProductionArt';
+import { lobbyEStyleIdleMode, lobbyPreviewMode, lobbyProductionMode, lobbyReferenceMode } from '../lobbyPreviewMode';
 import { LobbyArtPreview } from './LobbyArtPreview';
 import { characterPreviewMode } from '../characterPreviewMode';
 import { CharacterArtPreview } from './CharacterArtPreview';
@@ -39,11 +40,12 @@ export class Preloader extends Scene
     preload ()
     {
         queueCharacterSprites(this, lobbyPreviewMode || characterPreviewMode ? simplifiedDetectiveSpriteConfig : detectiveSpriteConfig);
-        if (characterPreviewMode) {
-            queueEStyleIdlePreview(this);
-            queueCharacterSprites(this, eStyleWalkPreviewConfig);
+        if (characterPreviewMode || lobbyEStyleIdleMode) queueEStyleIdlePreview(this);
+        if (characterPreviewMode || lobbyEStyleIdleMode) queueCharacterSprites(this, eStyleWalkPreviewConfig);
+        if (lobbyPreviewMode) {
+            if (lobbyProductionMode) queueLobbyProductionArt(this);
+            else queueLobbyArt(this, lobbyReferenceMode ? 'reference' : 'layers');
         }
-        if (lobbyPreviewMode) queueLobbyArt(this, lobbyReferenceMode ? 'reference' : 'layers');
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
 
