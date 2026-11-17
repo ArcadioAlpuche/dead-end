@@ -1,6 +1,9 @@
 import { Scene } from 'phaser';
-import { detectiveSpriteConfig } from '../characters/detective';
+import { detectiveSpriteConfig, simplifiedDetectiveSpriteConfig } from '../characters/detective';
 import { queueCharacterSprites } from '../characters/spriteAssets';
+import { queueLobbyArt } from '../adapters/lobbyArt';
+import { lobbyPreviewMode } from '../lobbyPreviewMode';
+import { LobbyArtPreview } from './LobbyArtPreview';
 
 export class Preloader extends Scene
 {
@@ -31,7 +34,8 @@ export class Preloader extends Scene
 
     preload ()
     {
-        queueCharacterSprites(this, detectiveSpriteConfig);
+        queueCharacterSprites(this, lobbyPreviewMode ? simplifiedDetectiveSpriteConfig : detectiveSpriteConfig);
+        if (lobbyPreviewMode) queueLobbyArt(this);
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
 
@@ -45,6 +49,7 @@ export class Preloader extends Scene
         //  For example, you can define global animations here, so we can use them in other scenes.
 
         //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
-        this.scene.start('Game');
+        if (lobbyPreviewMode) this.scene.add('LobbyArtPreview', LobbyArtPreview);
+        this.scene.start(lobbyPreviewMode ? 'LobbyArtPreview' : 'Game');
     }
 }
