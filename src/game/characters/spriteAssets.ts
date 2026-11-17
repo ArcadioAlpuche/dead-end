@@ -16,6 +16,7 @@ export function validSpriteConfig(config: CharacterSpriteConfig): boolean {
         && Number.isFinite(config.scale) && config.scale > 0
         && [config.origin.x, config.origin.y].every(value => Number.isFinite(value) && value >= 0 && value <= 1)
         && (config.sourceFacing === 1 || config.sourceFacing === -1)
+        && (config.idleSourceFacing === undefined || config.idleSourceFacing === 1 || config.idleSourceFacing === -1)
         && Number.isFinite(config.movingSpeed) && config.movingSpeed >= 0
         && (config.walkCycleDistance === undefined
             || (Number.isFinite(config.walkCycleDistance) && config.walkCycleDistance > 0))

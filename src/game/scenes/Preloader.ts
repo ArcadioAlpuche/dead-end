@@ -4,6 +4,10 @@ import { queueCharacterSprites } from '../characters/spriteAssets';
 import { queueLobbyArt } from '../adapters/lobbyArt';
 import { lobbyPreviewMode, lobbyReferenceMode } from '../lobbyPreviewMode';
 import { LobbyArtPreview } from './LobbyArtPreview';
+import { characterPreviewMode } from '../characterPreviewMode';
+import { CharacterArtPreview } from './CharacterArtPreview';
+import { queueEStyleIdlePreview } from '../characters/eStyleIdlePreview';
+import { eStyleWalkPreviewConfig } from '../characters/eStyleWalkPreview';
 
 export class Preloader extends Scene
 {
@@ -34,7 +38,11 @@ export class Preloader extends Scene
 
     preload ()
     {
-        queueCharacterSprites(this, lobbyPreviewMode ? simplifiedDetectiveSpriteConfig : detectiveSpriteConfig);
+        queueCharacterSprites(this, lobbyPreviewMode || characterPreviewMode ? simplifiedDetectiveSpriteConfig : detectiveSpriteConfig);
+        if (characterPreviewMode) {
+            queueEStyleIdlePreview(this);
+            queueCharacterSprites(this, eStyleWalkPreviewConfig);
+        }
         if (lobbyPreviewMode) queueLobbyArt(this, lobbyReferenceMode ? 'reference' : 'layers');
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
@@ -50,6 +58,7 @@ export class Preloader extends Scene
 
         //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
         if (lobbyPreviewMode) this.scene.add('LobbyArtPreview', LobbyArtPreview);
-        this.scene.start(lobbyPreviewMode ? 'LobbyArtPreview' : 'Game');
+        if (characterPreviewMode) this.scene.add('CharacterArtPreview', CharacterArtPreview);
+        this.scene.start(lobbyPreviewMode ? 'LobbyArtPreview' : characterPreviewMode ? 'CharacterArtPreview' : 'Game');
     }
 }

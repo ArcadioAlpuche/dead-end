@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PlayerAnimationController } from '../src/game/characters/animation.ts';
 import { originalDetectiveSpriteConfig as detectiveSpriteConfig, detectiveSpriteConfig as activeDetectiveConfig, detectiveVariant, simplifiedDetectiveSpriteConfig } from '../src/game/characters/detective.ts';
+import { eStyleWalkPreviewConfig } from '../src/game/characters/eStyleWalkPreview.ts';
 import { animationKey, textureKey, queueCharacterSprites, prepareCharacterAnimations, validSpriteConfig } from '../src/game/characters/spriteAssets.ts';
 import { PlayerVisual } from '../src/game/characters/PlayerVisual.ts';
 import { GameSession } from '../src/core/session.ts';
@@ -89,6 +90,40 @@ test('directional mirroring handles either source direction and can be disabled'
     assert.deepEqual(left.calls.flip, [true]);
     const fixed = controller({ mirrorX: false }); fixed.animation.update({ ...idleInput, facing: -1 });
     assert.deepEqual(fixed.calls.flip, []);
+});
+
+test('E-style walk and opposite-facing idle each keep the last horizontal direction', () => {
+    const config = eStyleWalkPreviewConfig;
+    const fake = mockScene(['idle', 'walk'], config);
+    const visual = new PlayerVisual(fake.scene, config);
+    const sprite = fake.objects.find(o => o.kind === 'sprite');
+    visual.body.x = 700;
+    visual.body.y = 620;
+    assert.equal(config.sourceFacing, 1);
+    assert.equal(config.idleSourceFacing, -1);
+    assert.equal(sprite.flipX, true, 'right-facing idle mirrors the native left-facing art');
+
+    visual.update({ ...idleInput, speed: 235, facing: 1 });
+    assert.equal(sprite.playing, animationKey(config, 'walk'));
+    assert.equal(sprite.flipX, false, 'rightward walk uses its native right-facing art');
+    visual.update({ ...idleInput, speed: 0, facing: 1 });
+    assert.equal(sprite.playing, animationKey(config, 'idle'));
+    assert.equal(sprite.flipX, true, 'rightward stop still faces right');
+
+    visual.update({ ...idleInput, speed: 235, facing: -1 });
+    assert.equal(sprite.playing, animationKey(config, 'walk'));
+    assert.equal(sprite.flipX, true, 'reversing immediately mirrors the walk');
+    visual.update({ ...idleInput, speed: 0, facing: -1 });
+    assert.equal(sprite.playing, animationKey(config, 'idle'));
+    assert.equal(sprite.flipX, false, 'leftward stop uses native left-facing idle');
+
+    visual.update({ ...idleInput, speed: 235, facing: -1 });
+    visual.update({ ...idleInput, speed: 235, facing: 1 });
+    assert.equal(sprite.flipX, false, 'reversing while walking takes effect without a clip restart');
+    assert.equal(sprite.playCount, 6, 'only idle/walk state changes restart a clip');
+    assert.deepEqual([visual.body.x, visual.body.y, sprite.x, sprite.y, sprite.scaleX],
+        [700, 620, 0, 0, config.scale]);
+    visual.destroy();
 });
 
 test('walk rate follows resolved speed without restarting; idle, special idle and UI use normal time', () => {

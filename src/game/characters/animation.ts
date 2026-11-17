@@ -17,6 +17,8 @@ export interface CharacterSpriteConfig {
     readonly origin: { readonly x: number; readonly y: number };
     readonly scale: number;
     readonly sourceFacing: -1 | 1;
+    /** Native orientation of idle art when it differs from the walking sheet. */
+    readonly idleSourceFacing?: -1 | 1;
     readonly mirrorX: boolean;
     readonly movingSpeed: number;
     readonly idle: AnimationClip;
@@ -43,6 +45,7 @@ export interface AnimationPlayback {
 
 export interface AnimationSettings {
     readonly sourceFacing: -1 | 1;
+    readonly idleSourceFacing?: -1 | 1;
     readonly mirrorX: boolean;
     readonly movingSpeed: number;
     /** World pixels/second matching the walk clip's configured frame rate. */
@@ -57,13 +60,16 @@ export class PlayerAnimationController {
     private idleMs = 0;
     private paused = false;
     private mirrored = false;
+    private facing: -1 | 1;
     private readonly settings: AnimationSettings;
     private readonly playback: AnimationPlayback;
 
     constructor(settings: AnimationSettings, playback: AnimationPlayback) {
         this.settings = settings;
         this.playback = playback;
+        this.facing = settings.sourceFacing;
         playback.play('idle');
+        this.applyFacing();
     }
 
     get animation(): PlayerAnimation { return this.current; }
@@ -72,14 +78,21 @@ export class PlayerAnimationController {
         if (this.current === animation) return;
         this.current = animation;
         this.playback.play(animation);
+        this.applyFacing();
+    }
+
+    private applyFacing(): void {
+        const sourceFacing = this.current === 'idle'
+            ? this.settings.idleSourceFacing ?? this.settings.sourceFacing
+            : this.settings.sourceFacing;
+        const mirrored = this.settings.mirrorX && this.facing !== sourceFacing;
+        if (mirrored === this.mirrored) return;
+        this.mirrored = mirrored;
+        this.playback.setMirrored(mirrored);
     }
 
     update(input: AnimationInput): void {
-        const mirrored = this.settings.mirrorX && input.facing !== this.settings.sourceFacing;
-        if (mirrored !== this.mirrored) {
-            this.mirrored = mirrored;
-            this.playback.setMirrored(mirrored);
-        }
+        this.facing = input.facing;
         if (input.paused) {
             this.idleMs = 0;
             this.select('idle');
@@ -94,6 +107,7 @@ export class PlayerAnimationController {
                 this.select('specialIdle');
             }
         }
+        this.applyFacing();
         // Change playback rate without restarting the cycle as movement accelerates or slows.
         this.playback.setTimeScale(this.current === 'walk' && this.settings.walkReferenceSpeed
             ? input.speed / this.settings.walkReferenceSpeed : 1);

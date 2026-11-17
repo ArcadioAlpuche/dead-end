@@ -29,7 +29,8 @@ export class PlayerVisual {
             };
             sprite.on('animationupdate', alignFrame);
             this.controller = new PlayerAnimationController({
-                sourceFacing: config.sourceFacing, mirrorX: config.mirrorX, movingSpeed: config.movingSpeed,
+                sourceFacing: config.sourceFacing, idleSourceFacing: config.idleSourceFacing,
+                mirrorX: config.mirrorX, movingSpeed: config.movingSpeed,
                 walkReferenceSpeed: config.walkCycleDistance === undefined ? undefined
                     : config.walkCycleDistance * config.scale * config.walk.frameRate / config.walk.frames.length,
                 specialIdleAfterMs: animations.specialIdle ? config.specialIdle?.afterMs : undefined,
