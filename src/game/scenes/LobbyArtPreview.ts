@@ -5,6 +5,7 @@ import { drawLobbyArt } from '../adapters/lobbyArt.ts';
 import { INTERIOR_MOVEMENT, stepMovement } from '../adapters/movement.ts';
 import { PlayerVisual } from '../characters/PlayerVisual.ts';
 import { simplifiedDetectiveSpriteConfig } from '../characters/detective.ts';
+import { lobbyReferenceMode } from '../lobbyPreviewMode.ts';
 
 /** Development-only image compositor; never touches the authoritative session or saves. */
 export class LobbyArtPreview extends Scene {
@@ -17,8 +18,9 @@ export class LobbyArtPreview extends Scene {
 
     create(): void {
         const location = hotel.locations.lobby;
-        const unavailable = drawLobbyArt(this);
-        this.player = { ...location.entries.arrival };
+        const unavailable = drawLobbyArt(this, lobbyReferenceMode ? 'reference' : 'layers');
+        // Center the full-frame 4:3 reference in the 1024-pixel viewport at first load.
+        this.player = lobbyReferenceMode ? { x: 660, y: 590, facing: 1 } : { ...location.entries.arrival };
         this.visual = new PlayerVisual(this, simplifiedDetectiveSpriteConfig);
         this.visual.body.setPosition(this.player.x, this.player.y).setDepth(this.player.y);
         this.visual.update({ speed: 0, facing: this.player.facing, deltaMs: 0, paused: false });

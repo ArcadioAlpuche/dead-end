@@ -1,6 +1,13 @@
 import type { Scene } from 'phaser';
 
 export const LOBBY_ART_PATH = 'assets/locations/bellweather/lobby/preview/';
+export const LOBBY_REFERENCE = {
+    file: 'assets/locations/bellweather/lobby/reference/approved-architectural-reference.png',
+    width: 1448, height: 1086,
+    // Fit the full 4:3 frame inside the 1320 × 768 world without stretching or cropping.
+    scale: 768 / 1086,
+    x: 148, y: 0, depth: -300,
+} as const;
 
 // World pixels. Each PNG has its own transparent canvas and this top-left position.
 // Depth 545 is the desk's existing floor contact; Kane sorts at his foot y.
@@ -13,15 +20,19 @@ export const LOBBY_ART_LAYERS = [
     { id: 'lighting', file: 'preview-lighting.png', x: 0, y: 0, width: 1320, height: 768, depth: 900 },
 ] as const;
 
-export function queueLobbyArt(scene: Pick<Scene, 'load'>): void {
+export function queueLobbyArt(scene: Pick<Scene, 'load'>, mode: 'layers' | 'reference' = 'layers'): void {
     // Absolute-to-page asset paths work with Vite's relative base and the template loader path.
     const previousPath = scene.load.path;
     const previousPrefix = scene.load.prefix;
     scene.load.setPath('');
     scene.load.setPrefix('');
     try {
-        for (const layer of LOBBY_ART_LAYERS) {
-            scene.load.image(`lobby-preview.${layer.id}`, `${LOBBY_ART_PATH}${layer.file}`);
+        if (mode === 'reference') {
+            scene.load.image('lobby-preview.reference', LOBBY_REFERENCE.file);
+        } else {
+            for (const layer of LOBBY_ART_LAYERS) {
+                scene.load.image(`lobby-preview.${layer.id}`, `${LOBBY_ART_PATH}${layer.file}`);
+            }
         }
     } finally {
         scene.load.setPath(previousPath);
@@ -29,7 +40,18 @@ export function queueLobbyArt(scene: Pick<Scene, 'load'>): void {
     }
 }
 
-export function drawLobbyArt(scene: Pick<Scene, 'add' | 'textures'>): string[] {
+export function drawLobbyArt(scene: Pick<Scene, 'add' | 'textures'>, mode: 'layers' | 'reference' = 'layers'): string[] {
+    if (mode === 'reference') {
+        const key = 'lobby-preview.reference';
+        const texture = scene.textures.exists(key) ? scene.textures.get(key) : null;
+        const source = texture?.getSourceImage();
+        if (!source || source.width !== LOBBY_REFERENCE.width || source.height !== LOBBY_REFERENCE.height) {
+            return ['architectural reference'];
+        }
+        scene.add.image(LOBBY_REFERENCE.x, LOBBY_REFERENCE.y, key).setOrigin(0, 0)
+            .setScale(LOBBY_REFERENCE.scale).setDepth(LOBBY_REFERENCE.depth);
+        return [];
+    }
     const unavailable: string[] = [];
     for (const layer of LOBBY_ART_LAYERS) {
         const key = `lobby-preview.${layer.id}`;

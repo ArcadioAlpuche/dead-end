@@ -6,6 +6,8 @@ Status: development-only compositor test. The six `preview-*.png` files are deli
 
 Run `npm run dev-nolog`, then open `http://localhost:8080/?lobbyPreview=1`. Move Detective V2 with WASD or the arrow keys. The preview uses the existing lobby's 13-pixel foot collision, 235/145 px/s interior movement, desk obstacle, and 1× interior camera. It has no E interactions, casebook, dialogue, or autosave; the test scene never changes `GameSession`. Remove the query parameter (or use a production build) for the normal game. A red panel and a missing/wrong-size message indicate a broken layer; neither silently substitutes final art.
 
+For a **composition-only view** of the approved handoff, open `?lobbyPreview=1&reference=1` instead. This displays the unchanged `reference/approved-architectural-reference.png` behind Detective V2. It does not replace any transparent layer or the playable lobby. The temporary six-layer preview remains the default when `reference=1` is absent.
+
 The preview deliberately shows the current collision plan, not a proposed new lobby layout. Its door, desk, and Arthur positions are visual alignment references only. Their production positions remain in `src/content/hotel.ts` until a separate layout change is approved and saved positions are handled.
 
 ## Export contract
@@ -27,6 +29,12 @@ The preview deliberately shows the current collision plan, not a proposed new lo
 Detective V2 is positioned by his **foot anchor** at depth equal to foot `y`, between the back layers and the desk/foreground as appropriate. The desk's depth of 545 provides a sorting threshold, although the current desk collision only lets Kane approach its front. Arthur remains a separate layer; his visual is not an NPC state object. Future furniture can use the same placed-layer pattern, with collision footprints kept in content data rather than inferred from PNG transparency.
 
 The lighting image is a conventional alpha overlay, not dynamic lighting or a promise of the final grade. The final environment can omit it or replace it with multiple localized overlays. Final art should be reviewed at FIT-scaled browser sizes for seams, blur, alpha fringes, foot alignment, and contrast against V2.
+
+## Approved architectural reference: preparation limits
+
+The handoff PNG is **1448 × 1086, 8-bit RGB**, with no alpha channel. Its 4:3 aspect ratio differs from the 1320 × 768 world canvas (55:32, about 1.719:1). Stretching it to the canvas would use different horizontal and vertical scales and distort the architecture. Fitting the entire image to the 768-pixel world height uses one scale, `768 / 1086`, yielding **1024 × 768** at `(148, 0)` with 148-pixel margins on each side. Fitting its width instead would yield 1320 × 990 and crop about 222 vertical pixels. The reference preview chooses the full-height fit to preserve the complete composition. It is a reduced, uniformly scaled comparison, not a production export; the original PNG bytes are preserved. The existing 1320-pixel world, collision, and camera remain unchanged, so the side margins and current desk obstacle are **not** an approved layout.
+
+The street scenes visible through the door and window are baked into this opaque image. The plant, staircase, key cubbies, and lighting are also baked in. The reference door and stairs do not align with the current playable lobby's interaction anchors or collision plan. Cropping the image or adding a second exterior image on top would not create true independent openings. A production handoff needs an aligned architecture export with transparent glass/opening regions and a separate exterior-view PNG behind it, plus separate desk, Arthur, and foreground occlusion exports. Those assets should share the target world-canvas origin or carry explicit crop coordinates in the layer manifest. The architectural export should not lock daytime/rain conditions into permanent interior pixels. Until those exports exist, this reference must remain a comparison image only.
 
 ## Implementation boundary
 
