@@ -3,6 +3,7 @@ import { hotel } from '../../content/hotel.ts';
 import type { Entry } from '../../core/model.ts';
 import { drawLobbyArt } from '../adapters/lobbyArt.ts';
 import { drawLobbyProductionArt, hasLobbyProductionDesk, LOBBY_PRODUCTION_CANVAS } from '../adapters/lobbyProductionArt.ts';
+import { drawArthurOptionB, hasArthurOptionB } from '../adapters/lobbyArthurPreview.ts';
 import { LOBBY_PREVIEW_DESK, LOBBY_PREVIEW_WALK_BOUNDS } from '../adapters/lobbyProductionCollision.ts';
 import { createLobbySpatialDebug } from '../adapters/lobbySpatialDebug.ts';
 import { INTERIOR_MOVEMENT, stepMovement } from '../adapters/movement.ts';
@@ -10,7 +11,7 @@ import { PlayerVisual } from '../characters/PlayerVisual.ts';
 import { simplifiedDetectiveSpriteConfig } from '../characters/detective.ts';
 import { createEStyleIdlePreview } from '../characters/eStyleIdlePreview.ts';
 import { eStyleWalkPreviewConfig } from '../characters/eStyleWalkPreview.ts';
-import { lobbyEStyleIdleMode, lobbyProductionMode, lobbyReferenceMode, lobbySpatialDebugMode } from '../lobbyPreviewMode.ts';
+import { lobbyArthurPreview, lobbyEStyleIdleMode, lobbyProductionMode, lobbyReferenceMode, lobbySpatialDebugMode } from '../lobbyPreviewMode.ts';
 
 /** Development-only image compositor; never touches the authoritative session or saves. */
 export class LobbyArtPreview extends Scene {
@@ -28,9 +29,15 @@ export class LobbyArtPreview extends Scene {
 
     create(): void {
         const location = hotel.locations.lobby;
+        const useArthurOptionB = lobbyProductionMode && lobbyArthurPreview.variant === 'optionB'
+            && hasArthurOptionB(this);
         const unavailable = lobbyProductionMode
-            ? drawLobbyProductionArt(this)
+            ? drawLobbyProductionArt(this, useArthurOptionB)
             : drawLobbyArt(this, lobbyReferenceMode ? 'reference' : 'layers');
+        if (useArthurOptionB) drawArthurOptionB(this, lobbyArthurPreview);
+        else if (lobbyProductionMode && lobbyArthurPreview.variant === 'optionB') {
+            unavailable.push('arthur-option-b-cutout.png');
+        }
         this.deskCollisionEnabled = lobbyProductionMode && hasLobbyProductionDesk(this);
         // Start each comparison at a useful local view; none of these positions are saved.
         this.player = lobbyReferenceMode ? { x: 660, y: 590, facing: 1 }

@@ -45,7 +45,7 @@ export function hasLobbyProductionDesk(scene: Pick<Scene, 'textures'>): boolean 
         && source?.height === LOBBY_PRODUCTION_CANVAS.height;
 }
 
-export function drawLobbyProductionArt(scene: Pick<Scene, 'add' | 'textures'>): string[] {
+export function drawLobbyProductionArt(scene: Pick<Scene, 'add' | 'textures'>, omitOriginalArthur = false): string[] {
     const unavailable: string[] = [];
     const drawLayer = (layer: { id: string; file: string; depth: number }): boolean => {
         const key = `lobby-production.${layer.id}`;
@@ -61,6 +61,7 @@ export function drawLobbyProductionArt(scene: Pick<Scene, 'add' | 'textures'>): 
         if (!drawLayer(layer)) unavailable.push(layer.file);
     }
     for (const layer of LOBBY_PRODUCTION_OPTIONAL_LAYERS) {
+        if (omitOriginalArthur && layer.id === 'arthur') continue;
         drawLayer(layer);
     }
     return unavailable;

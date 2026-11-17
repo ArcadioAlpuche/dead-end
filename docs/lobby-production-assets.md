@@ -22,6 +22,14 @@ The four architectural PNGs remain required. Arthur and the desk are now separat
 | `arthur.png` | 500 | Behind the desk and in front of architecture/floor. No NPC state or interaction is created by the art. |
 | `desk.png` | 590 | In front of Arthur; Kane sorts by his foot `y` and appears in front after clearing the painted base at `y=590`. |
 
+### Approved Option B Arthur
+
+Option B Arthur, with his original darker vest and static pose, is the approved default in the isolated development production preview. Add `&arthur=original` to compare the earlier full-canvas `arthur.png`. The selected cutout is `public/assets/characters/arthur-finch/arthur-option-b-cutout.png`; if missing or the wrong size, the preview warns and falls back to the original. The approved source `arthur-option-b-approved.png` remains unchanged. Its canvas is 1024 × 1536 RGBA and mostly transparent already; the painted oval floor shadow was removed from the separate cutout by changing alpha only. Arthur's character pixels and RGB channels were preserved. The cutout's visible bounds at alpha ≥ 128 are `x=253–752, y=29–1498`.
+
+Option B is centered at world **`x=730`**, aligned with the desk emblem, with an implied foot anchor at **`y=535`**, full visible height **170 world pixels**, and depth `500`, behind the unchanged desk at depth `590`. The scale is `170 / 1470 ≈ 0.11565`, based on visible artwork rather than the 1536-pixel canvas. The desk covers his hands and lower body while his head, shoulders, and upper torso remain visible above the counter. These are presentation coordinates only; they do not change an NPC interaction anchor or collision.
+
+Optional tuning parameters are `arthurX=730` (700–1000), `arthurY=535` (foot y, 500–650), and `arthurHeight=170` (visible world pixels, 120–240). Invalid values use the defaults. The original comparison is `?lobbyPreview=1&production=1&kaneIdle=1&arthur=original`; the redesigned default is `?lobbyPreview=1&production=1&kaneIdle=1`. Add `&arthurHeight=185&arthurX=840` to revisit the earlier larger placement. All Arthur flags are ignored outside the development production preview.
+
 Chairs, table, plant, posts, stair rail, and other foreground objects remain separate future exports so they can be sorted around Kane by floor-contact depth. Optional localized lighting and weather/time variants also remain future layers; permanent architecture and floor should stay neutral enough to support them. Future objects may use documented crop coordinates from the layout spec, but all six currently declared exports use the full shared canvas.
 
 ## Isolated in-engine check

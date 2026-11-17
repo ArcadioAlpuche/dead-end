@@ -1,5 +1,6 @@
 import { resolveLobbyPreviewQuery } from './lobbyPreviewQuery.ts';
 import { resolveEStyleLobbyPreviewQuery } from './eStyleLobbyPreviewQuery.ts';
+import { resolveArthurPreviewQuery } from './adapters/lobbyArthurPreview.ts';
 
 const query = resolveLobbyPreviewQuery(window.location.search, import.meta.env.DEV);
 export const lobbyPreviewMode = query.preview;
@@ -13,3 +14,4 @@ export const lobbyProductionMode = query.production;
 export const lobbySpatialDebugMode = query.debug;
 
 export const lobbyEStyleIdleMode = resolveEStyleLobbyPreviewQuery(window.location.search, query.production);
+export const lobbyArthurPreview = resolveArthurPreviewQuery(window.location.search, query.production);

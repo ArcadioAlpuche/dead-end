@@ -3,12 +3,13 @@ import { detectiveSpriteConfig, simplifiedDetectiveSpriteConfig } from '../chara
 import { queueCharacterSprites } from '../characters/spriteAssets';
 import { queueLobbyArt } from '../adapters/lobbyArt';
 import { queueLobbyProductionArt } from '../adapters/lobbyProductionArt';
-import { lobbyEStyleIdleMode, lobbyPreviewMode, lobbyProductionMode, lobbyReferenceMode } from '../lobbyPreviewMode';
+import { lobbyArthurPreview, lobbyEStyleIdleMode, lobbyPreviewMode, lobbyProductionMode, lobbyReferenceMode } from '../lobbyPreviewMode';
 import { LobbyArtPreview } from './LobbyArtPreview';
 import { characterPreviewMode } from '../characterPreviewMode';
 import { CharacterArtPreview } from './CharacterArtPreview';
 import { queueEStyleIdlePreview } from '../characters/eStyleIdlePreview';
 import { eStyleWalkPreviewConfig } from '../characters/eStyleWalkPreview';
+import { queueArthurOptionB } from '../adapters/lobbyArthurPreview';
 
 export class Preloader extends Scene
 {
@@ -42,6 +43,7 @@ export class Preloader extends Scene
         queueCharacterSprites(this, lobbyPreviewMode || characterPreviewMode ? simplifiedDetectiveSpriteConfig : detectiveSpriteConfig);
         if (characterPreviewMode || lobbyEStyleIdleMode) queueEStyleIdlePreview(this);
         if (characterPreviewMode || lobbyEStyleIdleMode) queueCharacterSprites(this, eStyleWalkPreviewConfig);
+        if (lobbyProductionMode && lobbyArthurPreview.variant === 'optionB') queueArthurOptionB(this);
         if (lobbyPreviewMode) {
             if (lobbyProductionMode) queueLobbyProductionArt(this);
             else queueLobbyArt(this, lobbyReferenceMode ? 'reference' : 'layers');
