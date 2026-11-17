@@ -10,6 +10,8 @@ For a **composition-only view** of the approved handoff, open `?lobbyPreview=1&r
 
 The preview deliberately shows the current collision plan, not a proposed new lobby layout. Its door, desk, and Arthur positions are visual alignment references only. Their production positions remain in `src/content/hotel.ts` until a separate layout change is approved and saved positions are handled.
 
+The review-only spatial proposal for final art is in [lobby-production-layout.md](lobby-production-layout.md). It does not change this preview or the playable lobby.
+
 ## Export contract
 
 - World canvas: **1320 × 768 world pixels**, origin `(0, 0)` at the top left. The game viewport is 1024 × 768, so horizontal camera panning reveals the whole lobby. Do not resize the canvas or change the global Phaser scale to fit one image.
