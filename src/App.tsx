@@ -25,6 +25,7 @@ function App() {
             // Let the conversation own typing, repeats, Tab and Enter. Phaser input is disabled.
             if (state.conversation) {
                 if (key === 'Escape' && !event.isComposing) {
+                    if (document.getElementById('conversation-history-panel')) return;
                     event.preventDefault(); event.stopImmediatePropagation();
                     if (!event.repeat) session.closeDialogue();
                 }
@@ -79,7 +80,7 @@ function App() {
                 </div>
                 <div ref={confirmationUnderlay}>
                     {view.notebookOpen && <Notebook entries={view.entries} cases={view.cases} offerId={view.caseOfferId} actionError={view.actionError} />}
-                    {view.conversation && <Dialogue conversation={view.conversation} />}
+                    {view.conversation && <Dialogue conversation={view.conversation} locationId={view.locationId} />}
                 </div>
                 {view.pendingAction && <Confirmation action={view.pendingAction} underlay={confirmationUnderlay}
                     onConfirm={token => session.confirmAction(token)} onCancel={token => session.cancelAction(token)} />}
