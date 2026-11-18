@@ -42,12 +42,14 @@ export class Preloader extends Scene
     {
         queueCharacterSprites(this, lobbyPreviewMode || characterPreviewMode ? simplifiedDetectiveSpriteConfig : detectiveSpriteConfig);
         if (characterPreviewMode || lobbyEStyleIdleMode) queueEStyleIdlePreview(this);
-        if (characterPreviewMode || lobbyEStyleIdleMode) queueCharacterSprites(this, eStyleWalkPreviewConfig);
-        if (lobbyProductionMode && lobbyArthurPreview.variant === 'optionB') queueArthurOptionB(this);
+        if (characterPreviewMode || lobbyEStyleIdleMode || !lobbyPreviewMode) queueCharacterSprites(this, eStyleWalkPreviewConfig);
+        if ((lobbyProductionMode && lobbyArthurPreview.variant === 'optionB')
+            || (!lobbyPreviewMode && !characterPreviewMode)) queueArthurOptionB(this);
         if (lobbyPreviewMode) {
             if (lobbyProductionMode) queueLobbyProductionArt(this);
             else queueLobbyArt(this, lobbyReferenceMode ? 'reference' : 'layers');
         }
+        else if (!characterPreviewMode) queueLobbyProductionArt(this);
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
 

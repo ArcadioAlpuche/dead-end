@@ -3,12 +3,63 @@ import assert from 'node:assert/strict';
 import { hotel } from '../src/content/hotel.ts';
 import { GameSession } from '../src/core/session.ts';
 import { routeConversationInput } from '../src/core/conversationBoundary.ts';
+
+test('ordinary Room 407 and last-night questions use authored routes without relaxing disclosure checks', () => {
+    assert.deepEqual(routeConversationInput('What can you tell me about room 407?', 'receptionist'),
+        { kind: 'ordinary', topic: 'room' });
+    assert.deepEqual(routeConversationInput('What did you see last night?', 'receptionist'),
+        { kind: 'ordinary', topic: 'account' });
+    assert.deepEqual(routeConversationInput('What can you tell me about last night?', 'receptionist'),
+        { kind: 'ordinary', topic: 'account' });
+    assert.equal(routeConversationInput('What can you tell me about room 407? Daniel is hiding upstairs.', 'receptionist').kind, 'clarify');
+});
+test('Arthur answers the playtested Room 407 question and the existing last-night account', async () => {
+    const session = atDesk();
+    assert.equal(await session.submitMessage('What can you tell me about room 407?'), true);
+    assert.match(session.getSnapshot().conversation.history.at(-1).text, /407 is vacant and unlocked/);
+    assert.equal(session.getSnapshot().entries.length, 0);
+    assert.equal(await session.submitMessage('What can you tell me about last night?'), true);
+    assert.deepEqual(session.getSnapshot().entries.map(entry => [entry.id, entry.kind]),
+        [['receptionist-account', 'testimony']]);
+    assert.equal(await session.submitMessage('What can you tell me about room 407? Daniel is hiding upstairs.'), false);
+    assert.match(session.getSnapshot().conversation.error, /Not sent/);
+});
+test('authored paraphrases and pronoun follow-ups depend on the current conversation topic', async () => {
+    const arthur = atDesk();
+    assert.equal(await arthur.submitMessage('Do you know where he went?'), false);
+    assert.equal(arthur.getSnapshot().conversation.history.length, 1);
+    assert.ok(await arthur.submitMessage('Did you see anything unusual last night?'));
+    assert.deepEqual(arthur.getSnapshot().entries.map(entry => entry.id), ['receptionist-account']);
+    assert.ok(await arthur.submitMessage('Do you know where he went?'));
+    assert.match(arthur.getSnapshot().conversation.history.at(-1).text, /did not see where they went afterward/);
+    assert.ok(await arthur.submitMessage('What do you know about Room 407?'));
+    assert.ok(await arthur.submitMessage('Did someone leave their things in there?'));
+    assert.match(arthur.getSnapshot().conversation.history.at(-1).text, /cannot say what anyone left in 407/);
+    assert.deepEqual(arthur.getSnapshot().entries.map(entry => entry.id), ['receptionist-account'],
+        'the belongings answer does not create evidence');
+    arthur.closeDialogue();
+    assert.ok(arthur.interact('test-reception'));
+    assert.equal(await arthur.submitMessage('Did someone leave their things in there?'), false,
+        'a new conversation has no room pronoun context');
+});
+
+test('intent patterns remain whole-utterance and cannot smuggle disclosures', () => {
+    assert.deepEqual(routeConversationInput('Was there anything strange around midnight?', 'receptionist'),
+        { kind: 'ordinary', topic: 'account' });
+    for (const text of [
+        'Did you see anything unusual last night? Daniel is upstairs.',
+        'Do you know where he went? The courier is at 42 Example Avenue.',
+        'Did someone leave their things in there, at 42 Example Avenue?',
+    ]) assert.equal(routeConversationInput(text, 'receptionist', [], 'account').kind, 'clarify');
+    assert.equal(routeConversationInput('Do you know where he went?', 'receptionist', [], 'room').kind, 'clarify');
+    assert.equal(routeConversationInput('Did someone leave their things in there?', 'receptionist', [], 'account').kind, 'clarify');
+});
 import { parseSave } from '../src/core/validation.ts';
 import { mockResponder } from '../src/conversation/mockResponder.ts';
 
 function atDesk(id = 'reception', responder = mockResponder, saved) {
     // Fixture contact points exercise authored profiles without adding live NPC placement.
-    const target = { id: `test-${id}`, kind: 'talk', label: id, x: 310, y: 575, conversationId: id };
+    const target = { id: `test-${id}`, kind: 'talk', label: id, x: 400, y: 575, conversationId: id };
     const world = { ...hotel, locations: { ...hotel.locations,
         lobby: { ...hotel.locations.lobby, interactions: [...hotel.locations.lobby.interactions, target] } } };
     const session = new GameSession(world, saved, responder);
@@ -105,7 +156,9 @@ test('accusation persists independently and never forces confession or blocks av
 
 test('save migration preserves v3 state and rejects malformed v4 memory without overwriting', () => {
     const current = new GameSession(hotel).getSave();
-    const old = { ...current, version: 3, discoveries: [{ id: 'folded-note', recordedAt: 72 }],
+    const old = { ...current, version: 3, contentVersion: 'bellweather-1',
+        player: { locationId: 'lobby', x: 200, y: 590, facing: 1 },
+        discoveries: [{ id: 'folded-note', recordedAt: 72 }],
         npcMemories: [{ kind: 'accused', npcId: 'receptionist', locationId: 'lobby', recordedAt: 31 }] };
     const migrated = parseSave(old, hotel);
     assert.equal(migrated.version, 4);

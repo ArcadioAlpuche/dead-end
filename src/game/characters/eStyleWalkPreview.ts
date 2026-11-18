@@ -1,7 +1,7 @@
 import type { CharacterSpriteConfig } from './animation.ts';
 import { E_STYLE_IDLE_SCALE } from './eStyleIdlePreview.ts';
 
-/** Isolated comparison sprite; the playable detective continues to use Detective V2. */
+/** Approved E-style sprite shared by the comparison and illustrated playable lobby. */
 export const eStyleWalkPreviewConfig: CharacterSpriteConfig = {
     enabled: true,
     key: 'kane-e-style-walk-preview',

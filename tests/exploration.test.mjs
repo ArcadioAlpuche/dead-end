@@ -76,14 +76,14 @@ test('dialogue and notebook block movement and world interaction; closing restor
     const session = new GameSession(hotel);
     approach(session, 'receptionist');
     const player = session.getPlayer();
-    assert.equal(session.moveTo({ x: 900, y: 600, facing: 1 }), false);
+    assert.equal(session.moveTo({ x: 900, y: 650, facing: 1 }), false);
     assert.equal(session.interact('receptionist'), false);
     session.toggleNotebook(); assert.equal(session.getSnapshot().notebookOpen, false);
     session.closeDialogue(); session.toggleNotebook();
-    assert.equal(session.moveTo({ x: 900, y: 600, facing: 1 }), false);
+    assert.equal(session.moveTo({ x: 900, y: 650, facing: 1 }), false);
     assert.deepEqual(session.getPlayer(), player);
     session.toggleNotebook();
-    assert.equal(session.moveTo({ x: 900, y: 600, facing: 1 }), true);
+    assert.equal(session.moveTo({ x: 900, y: 650, facing: 1 }), true);
 });
 
 test('movement stops at furniture and walls, slides along obstacles, and handles long frames', () => {
@@ -104,7 +104,7 @@ test('resolved movement avoids per-frame React notifications when the nearby tar
     const session = new GameSession(hotel);
     let notifications = 0;
     const unsubscribe = session.subscribe(() => notifications++);
-    for (let i = 0; i < 30; i++) session.moveTo({ x: 200 + i, y: 590, facing: 1 });
+    for (let i = 0; i < 30; i++) session.moveTo({ x: 150 + i, y: 710, facing: 1 });
     assert.equal(notifications, 0);
     unsubscribe(); session.toggleNotebook();
     assert.equal(notifications, 0);

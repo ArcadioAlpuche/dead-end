@@ -18,10 +18,12 @@ export const npcConversations: Readonly<Record<string, ConversationDefinition>> 
         topics: {
             account: { id: 'account', stance: 'observed',
                 line: { speaker: 'Arthur Finch', text: 'Someone came down from upstairs around midnight, carrying a coat. I couldn’t tell you which room. That’s all I saw.', recordId: 'receptionist-account' },
-                followUp: '“I saw a coat and someone coming down. I did not see a face or which room they left.”' },
+                followUp: '“I saw a coat and someone coming down. I did not see a face or which room they left.”',
+                contextualReplies: { 'where-seen-person-went': '“I saw someone come down, but I did not see where they went afterward. I did not see a face or which room they left.”' } },
             room: { id: 'room', stance: 'procedure',
                 line: { speaker: 'Arthur Finch', text: '407 is vacant and unlocked for inspection. Fourth floor, three flights up. Please leave everything where you find it.' },
-                followUp: '“The stairs are through that door. Three flights up, then look for 407.”' },
+                followUp: '“The stairs are through that door. Three flights up, then look for 407.”',
+                contextualReplies: { 'room-belongings': '“I cannot say what anyone left in 407. The room is open for inspection; I would rather not guess about its contents.”' } },
         },
     },
     porter: {

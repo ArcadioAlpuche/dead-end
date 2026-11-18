@@ -19,13 +19,14 @@ function walk(start, x, y, frames = 120) {
     return player;
 }
 
-test('desk body uses its painted bounds and the existing foot radius only in production preview', () => {
+test('desk body uses its painted bounds and the existing foot radius in preview and playable lobby', () => {
     assert.deepEqual(LOBBY_PREVIEW_DESK, { x: 440, y: 530, width: 580, height: 60 });
     assert.equal(FOOT_RADIUS, 13);
     assert.equal(canStand(preview, { x: 870, y: 589 }), false);
     assert.equal(canStand(preview, { x: 870, y: 600 }), false);
     assert.equal(canStand(preview, { x: 870, y: 603 }), true);
-    assert.deepEqual(hotel.locations.lobby.obstacles, [{ x: 560, y: 500, width: 220, height: 45 }]);
+    assert.ok(hotel.locations.lobby.obstacles.some(obstacle =>
+        obstacle.x === 440 && obstacle.y === 530 && obstacle.width === 580 && obstacle.height === 60));
 });
 
 test('Kane approaches the front, then walks horizontally along both directions', () => {

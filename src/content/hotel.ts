@@ -19,20 +19,17 @@ export const hotel: WorldDefinition = {
         },
         lobby: {
             id: 'lobby', name: 'The lobby', subtitle: 'BELLWEATHER HOTEL', floor: 'GROUND FLOOR', width: 1320,
-            walkBounds: { x: 30, y: 500, width: 1260, height: 165 },
-            entries: { arrival: { x: 200, y: 590, facing: 1 }, fromTown: { x: 190, y: 550, facing: 1 }, fromStairs: { x: 1130, y: 555, facing: -1 } },
-            obstacles: [{ x: 560, y: 500, width: 220, height: 45 }],
-            props: [
-                { kind: 'door', x: 65, y: 300, width: 110, height: 200, label: 'STREET' },
-                { kind: 'window', x: 200, y: 220, width: 120, height: 240 },
-                { kind: 'window', x: 370, y: 220, width: 150, height: 240 },
-                { kind: 'desk', x: 560, y: 435, width: 220, height: 110, label: 'RECEPTION' },
-                { kind: 'door', x: 1115, y: 300, width: 110, height: 200, label: 'STAIRS' },
+            walkBounds: { x: 30, y: 550, width: 1260, height: 218 },
+            entries: { arrival: { x: 245, y: 710, facing: 1 }, fromTown: { x: 285, y: 650, facing: 1 }, fromStairs: { x: 1090, y: 625, facing: -1 } },
+            obstacles: [
+                { x: 440, y: 530, width: 580, height: 60 },
+                { x: 1050, y: 530, width: 250, height: 40 },
             ],
+            props: [],
             interactions: [
-                { id: 'lobby-town', kind: 'exit', label: 'Leave for the street', x: 120, y: 540, destination: 'town', entry: 'fromHotel' },
-                { id: 'receptionist', kind: 'talk', label: 'Talk to the receptionist', x: 670, y: 575, conversationId: 'reception' },
-                { id: 'lobby-stairs', kind: 'exit', label: 'Enter the staircase', x: 1170, y: 540, destination: 'staircase', entry: 'fromLobby' },
+                { id: 'lobby-town', kind: 'exit', label: 'Leave for the street', x: 230, y: 580, destination: 'town', entry: 'fromHotel' },
+                { id: 'receptionist', kind: 'talk', label: 'Talk to the receptionist', x: 730, y: 660, conversationId: 'reception' },
+                { id: 'lobby-stairs', kind: 'exit', label: 'Enter the staircase', x: 1175, y: 595, destination: 'staircase', entry: 'fromLobby' },
             ],
         },
         staircase: {

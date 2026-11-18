@@ -7,6 +7,10 @@ import { INTERIOR_MOVEMENT, OVERWORLD_MOVEMENT, stepMovement } from '../adapters
 import { PlayerVisual } from '../characters/PlayerVisual';
 import { OverworldVisual } from '../characters/OverworldVisual';
 import { detectiveSpriteConfig } from '../characters/detective';
+import { eStyleWalkPreviewConfig } from '../characters/eStyleWalkPreview';
+import { drawLobbyProductionArt } from '../adapters/lobbyProductionArt';
+import { drawArthurOptionB, hasArthurOptionB, ARTHUR_OPTION_B } from '../adapters/lobbyArthurPreview';
+import { interactionMarkerPoint } from '../adapters/interactionMarker';
 import type { LocationId } from '../../core/model';
 
 export class Game extends Scene {
@@ -25,14 +29,28 @@ export class Game extends Scene {
         this.transitioning = false;
         const location = session.world.locations[this.locationId];
         const overworld = location.presentation === 'overworld';
+        const illustratedLobby = this.locationId === 'lobby';
         if (overworld) drawTown(this, location);
+        else if (illustratedLobby) {
+            drawLobbyProductionArt(this, true);
+            if (hasArthurOptionB(this)) drawArthurOptionB(this, {
+                variant: 'optionB', x: ARTHUR_OPTION_B.defaultX,
+                footY: ARTHUR_OPTION_B.defaultFootY, height: ARTHUR_OPTION_B.defaultHeight,
+            });
+        }
         else drawLocation(this, location);
-        this.playerVisual = overworld ? new OverworldVisual(this) : new PlayerVisual(this, detectiveSpriteConfig);
+        if (overworld) this.playerVisual = new OverworldVisual(this);
+        else if (illustratedLobby) {
+            const eStyle = new PlayerVisual(this, eStyleWalkPreviewConfig);
+            this.playerVisual = eStyle.usingSprites ? eStyle : new PlayerVisual(this, detectiveSpriteConfig);
+            if (!eStyle.usingSprites) eStyle.destroy();
+        } else this.playerVisual = new PlayerVisual(this, detectiveSpriteConfig);
         this.detective = this.playerVisual.body;
         const player = session.getPlayer();
         this.detective.setPosition(player.x, player.y).setDepth(player.y);
         this.playerVisual.update({ speed: 0, facing: player.facing, deltaMs: 0, paused: session.isBlocked() });
-        this.marker = this.add.ellipse(0, 0, overworld ? 40 : 58, 18).setStrokeStyle(2, 0xd3b77c, 0.85).setDepth(498);
+        this.marker = this.add.ellipse(0, 0, overworld ? 40 : 58, 18)
+            .setStrokeStyle(2, 0xd3b77c, 0.85).setDepth(600);
         this.cameras.main.setZoom(overworld ? 0.82 : 1);
         this.cameras.main.setBounds(0, 0, location.width, location.height ?? 768);
         this.cameras.main.startFollow(this.detective, true, 0.12, overworld ? 0.12 : 1, 0, overworld ? 160 : 0);
@@ -54,8 +72,9 @@ export class Game extends Scene {
             }
             if (blocked !== session.isBlocked()) { clearInput(); blocked = session.isBlocked(); }
             keyboard.enabled = !blocked; // Keep scene input inactive while React owns focus.
-            this.marker.setVisible(!!view.nearby && !blocked);
-            if (view.nearby) this.marker.setPosition(view.nearby.x, view.nearby.y + 8);
+            const markerPoint = interactionMarkerPoint(this.locationId, view.nearby);
+            this.marker.setVisible(!!markerPoint && !blocked);
+            if (markerPoint) this.marker.setPosition(markerPoint.x, markerPoint.y).setDepth(markerPoint.y + 1);
         };
         const interact = (event: KeyboardEvent) => {
             if (event.repeat || this.transitioning || session.isBlocked()) return;

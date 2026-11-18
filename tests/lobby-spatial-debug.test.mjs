@@ -54,7 +54,7 @@ test('overlay draws walk bounds, radius-inset foot-center bounds and updates wor
         [label, x, y, width, height]), [
         ['Plant', 70, 540, 95, 75], ['West post', 320, 495, 32, 70],
         ['Left chair', 270, 625, 70, 50], ['Table', 425, 645, 70, 35],
-        ['Right chair', 580, 625, 75, 50], ['Desk', 730, 530, 280, 80],
+        ['Right chair', 580, 625, 75, 50], ['Desk', 440, 530, 580, 60],
         ['East post', 1025, 495, 32, 70], ['Stair base', 1050, 530, 250, 40],
     ]);
     for (const obstacle of LOBBY_PROPOSED_DEBUG_OBSTACLES) {
@@ -69,8 +69,8 @@ test('overlay draws walk bounds, radius-inset foot-center bounds and updates wor
     assert.deepEqual(LOBBY_PROPOSED_STAIR_ANCHOR, { x: 1175, y: 595 });
     assert.equal(INTERACTION_RADIUS, 86);
     assert.ok(calls.some(call => JSON.stringify(call) === JSON.stringify(['circle', 1175, 595, 86])));
-    assert.deepEqual(hotel.locations.lobby.obstacles, [{ x: 560, y: 500, width: 220, height: 45 }],
-        'debug proposal must not become playable collision');
+    assert.ok(hotel.locations.lobby.obstacles.some(obstacle =>
+        obstacle.x === 440 && obstacle.y === 530 && obstacle.width === 580 && obstacle.height === 60));
     overlay.update({ x: 1175.25, y: 700.5 });
     assert.ok(calls.some(call => JSON.stringify(call) === JSON.stringify(['circle', 1175.25, 700.5, 13])));
     assert.ok(calls.some(call => call[0] === 'text' && call[1].includes('x=1175.3 y=700.5  r=13')));
@@ -98,5 +98,6 @@ test('proposed stair base blocks painted step while leaving the anchor and lower
     }
     assert.equal(passedAnchor, true);
     assert.ok(position.y >= 583, 'foot center cannot cross the radius-expanded base');
-    assert.deepEqual(hotel.locations.lobby.obstacles, [{ x: 560, y: 500, width: 220, height: 45 }]);
+    assert.ok(hotel.locations.lobby.obstacles.some(obstacle =>
+        obstacle.x === 1050 && obstacle.y === 530 && obstacle.width === 250 && obstacle.height === 40));
 });

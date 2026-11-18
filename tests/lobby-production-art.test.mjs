@@ -23,8 +23,9 @@ test('production manifest locks the approved full-canvas order and floor line', 
         [['arthur.png', 500], ['desk.png', 590]]);
     assert.ok(LOBBY_PRODUCTION_LAYERS.at(-1).depth < LOBBY_PRODUCTION_OPTIONAL_LAYERS[0].depth);
     assert.ok(LOBBY_PRODUCTION_OPTIONAL_LAYERS[0].depth < LOBBY_PRODUCTION_OPTIONAL_LAYERS[1].depth);
-    assert.deepEqual(hotel.locations.lobby.walkBounds, { x: 30, y: 500, width: 1260, height: 165 });
-    assert.deepEqual(hotel.locations.lobby.obstacles, [{ x: 560, y: 500, width: 220, height: 45 }]);
+    assert.deepEqual(hotel.locations.lobby.walkBounds, { x: 30, y: 550, width: 1260, height: 218 });
+    assert.ok(hotel.locations.lobby.obstacles.some(obstacle =>
+        obstacle.x === 440 && obstacle.y === 530 && obstacle.width === 580 && obstacle.height === 60));
 });
 
 test('production queue uses only its own paths and restores the loader configuration', () => {

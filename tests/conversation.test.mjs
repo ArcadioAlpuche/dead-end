@@ -86,7 +86,7 @@ test('v1 migration preserves player, discoveries and timestamps, adds empty memo
     const loaded = loadLocal(storage, hotel);
     assert.equal(loaded.writable, true);
     assert.equal(data.get(SAVE_KEY), JSON.stringify(v1), 'Reading alone does not overwrite the old save');
-    assert.deepEqual(loaded.saved, { ...v1, version: 4, npcMemories: [], cases: {} });
+    assert.deepEqual(loaded.saved, { ...v1, version: 4, contentVersion: 'bellweather-3', npcMemories: [], cases: {} });
     const session = new GameSession(hotel, loaded.saved, mockResponder);
     assert.ok(saveLocal(storage, session));
     assert.equal(data.size, 1);

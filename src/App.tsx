@@ -58,7 +58,7 @@ function App() {
     }, []);
 
     return (
-        <main id="app">
+        <main id="app" className="playable-app">
             <header className="masthead">
                 <div><span className="eyebrow">A DETECTIVE ADVENTURE</span><h1>DEAD END<span className="title-dot">.</span></h1></div>
                 <div className="edition">THE BELLWEATHER HOTEL<br /><span>Exploration study · No. 01</span></div>

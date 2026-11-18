@@ -14,7 +14,8 @@ test('temporary lobby layers are RGBA PNGs at their declared crop sizes', () => 
         assert.ok(layer.x >= 0 && layer.y >= 0 && layer.x + layer.width <= 1320 && layer.y + layer.height <= 768);
     }
     assert.equal(LOBBY_ART_LAYERS.find(layer => layer.id === 'desk').depth, 545);
-    assert.deepEqual(hotel.locations.lobby.obstacles, [{ x: 560, y: 500, width: 220, height: 45 }]);
+    assert.ok(hotel.locations.lobby.obstacles.some(obstacle =>
+        obstacle.x === 440 && obstacle.y === 530 && obstacle.width === 580 && obstacle.height === 60));
 });
 
 test('preview loader queues only declared images and restores the template loader path', () => {

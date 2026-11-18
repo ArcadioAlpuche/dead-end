@@ -41,6 +41,7 @@ export interface NpcTopicDefinition {
     readonly stance: 'observed' | 'procedure' | 'claim' | 'belief' | 'uncertain' | 'evasion' | 'deception';
     readonly line: DialogueLine;
     readonly followUp: string;
+    readonly contextualReplies?: Readonly<Record<string, string>>;
 }
 interface MemoryBase {
     readonly kind: 'accused' | 'topic' | 'statement' | 'friction';
@@ -102,7 +103,7 @@ export interface WorldDefinition {
 }
 export interface SavedGame {
     readonly version: 4;
-    readonly contentVersion: 'bellweather-1';
+    readonly contentVersion: 'bellweather-3';
     readonly player: Player;
     readonly discoveries: readonly Discovery[];
     readonly npcMemories: readonly NpcMemoryEvent[];

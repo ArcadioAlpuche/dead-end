@@ -69,10 +69,11 @@ test('production floor movement keeps the same foot position and drives right, l
     assert.equal(canStand(location, player), true);
 });
 
-test('E-style foot depth still sorts around the reception desk without changing obstacles', () => {
+test('E-style foot depth sorts around the playable reception desk', () => {
     const desk = LOBBY_PRODUCTION_OPTIONAL_LAYERS.find(layer => layer.id === 'desk');
     assert.equal(desk.depth, 590);
     assert.ok(575 < desk.depth, 'Kane behind the desk at a back-floor foot position');
     assert.ok(710 > desk.depth, 'Kane in front of the desk on the lower route');
-    assert.deepEqual(hotel.locations.lobby.obstacles, [{ x: 560, y: 500, width: 220, height: 45 }]);
+    assert.ok(hotel.locations.lobby.obstacles.some(obstacle =>
+        obstacle.x === 440 && obstacle.y === 530 && obstacle.width === 580 && obstacle.height === 60));
 });

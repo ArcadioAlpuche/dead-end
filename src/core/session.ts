@@ -18,6 +18,7 @@ export class GameSession {
     private view: ViewState;
     private npcMemories: readonly NpcMemoryEvent[];
     private requestGeneration = 0;
+    private activeConversationTopic: string | null = null;
     private readonly actions: ActionConfirmation<CaseActionContext>;
     private readonly responder: ConversationResponder;
     private readonly listeners = new Set<() => void>();
@@ -48,7 +49,7 @@ export class GameSession {
     getPlayer(): Player { return this.player; }
     isBlocked(): boolean { return this.view.pendingAction !== null || this.view.notebookOpen || this.view.conversation !== null; }
     getSave(): SavedGame {
-        return { version: 4, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-1', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
+        return { version: 4, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-3', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
     }
     private publish(patch: Partial<ViewState>): void {
         this.view = { ...this.view, ...patch };
@@ -97,6 +98,7 @@ export class GameSession {
             this.publish({ message: this.world.records[target.recordId].text });
         } else {
             const definition = this.world.conversations[target.conversationId];
+            this.activeConversationTopic = null;
             const remembers = this.npcMemories.some(event => event.npcId === definition.npcId && event.kind === 'accused');
             this.publish({ conversation: {
                 id: target.conversationId, name: definition.name, pending: false, error: '',
@@ -113,7 +115,7 @@ export class GameSession {
         if (!conversation || conversation.pending || this.view.pendingAction || !text || text.length > MAX_MESSAGE_LENGTH) return false;
         const definition = this.world.conversations[conversation.id];
         // This boundary precedes transcript, memory, authored testimony and responder dispatch.
-        const route = routeConversationInput(text, definition.npcId);
+        const route = routeConversationInput(text, definition.npcId, [], this.activeConversationTopic);
         if (route.kind === 'clarify') {
             this.publish({ conversation: { ...conversation, error: route.message } });
             return false;
@@ -123,9 +125,16 @@ export class GameSession {
             return false; // A private proposal is never an NPC message.
         }
         const topic = route.topic;
-        const authored = definition.topics[topic === 'follow-up' ? lastDiscussedTopic(this.npcMemories, definition.npcId) ?? '' : topic];
+        const authored = definition.topics[topic === 'follow-up'
+            ? route.intent ? this.activeConversationTopic ?? '' : this.activeConversationTopic ?? lastDiscussedTopic(this.npcMemories, definition.npcId) ?? ''
+            : topic];
         if (['account', 'room', 'assignment', 'follow-up'].includes(topic) && !authored) {
             this.publish({ conversation: { ...conversation, error: 'Not sent. Ask about a specific topic first.' } });
+            return false;
+        }
+        const contextualReply = route.intent ? authored?.contextualReplies?.[route.intent] : null;
+        if (route.intent && !contextualReply) {
+            this.publish({ conversation: { ...conversation, error: `Not sent. ${definition.name} has no established answer to that follow-up.` } });
             return false;
         }
         // The player's explicit statement is remembered even if the response fails or they leave.
@@ -142,13 +151,13 @@ export class GameSession {
         const generation = ++this.requestGeneration;
         this.publish({ conversation: { ...conversation, history, pending: true, error: '' } });
         try {
-            const scripted = topic === 'irrelevant' ? irritation > definition.patience + 1 ? definition.silent
+            const scripted = contextualReply ?? (topic === 'irrelevant' ? irritation > definition.patience + 1 ? definition.silent
                 : irritation > definition.patience ? definition.disengaged
                 : irritation === definition.patience ? definition.warning : definition.irrelevant
                 : topic === 'rapport' ? definition.rapport
                 : topic === 'small-talk' ? definition.smallTalk
                 : topic === 'accusation' ? definition.accusationReply
-                : oldFriction > definition.patience && authored ? definition.reengaged : null;
+                : oldFriction > definition.patience && authored ? definition.reengaged : null);
             const adapterResponse = scripted && topic !== 'accusation' ? null : await this.responder.respond({ npcId: definition.npcId, text, topic,
                 history: history.map(line => ({ speaker: line.speaker, text: line.text })),
                 memories: this.npcMemories.filter(event => event.npcId === definition.npcId).map(event => ({ ...event })) });
@@ -156,10 +165,12 @@ export class GameSession {
             if (generation !== this.requestGeneration || !this.view.conversation) return true;
             if (typeof response !== 'string' || !response.trim() || response.length > 4000) throw new Error('Invalid response');
             // Only core-selected authored lines can grant knowledge. Adapter text is never evidence.
-            const line = topic === 'follow-up' && authored ? { speaker: definition.name, text: authored.followUp }
+            const line = route.intent ? null : topic === 'follow-up' && authored ? { speaker: definition.name, text: authored.followUp }
                 : authored?.line;
             const lines = [...history, { speaker: definition.name, text: response }, ...(line ? [line] : [])].slice(-MAX_HISTORY_LINES);
             this.publish({ conversation: { ...conversation, history: lines, pending: false, error: '' } });
+            if (authored && topic !== 'follow-up') this.activeConversationTopic = authored.id;
+            else if (!authored) this.activeConversationTopic = null;
             if (authored && topic !== 'follow-up') {
                 this.npcMemories = rememberOnce(this.npcMemories, { kind: 'topic', npcId: definition.npcId,
                     topicId: authored.id, locationId: this.player.locationId, recordedAt: Date.now() });
@@ -179,6 +190,7 @@ export class GameSession {
     }
     closeDialogue(): void {
         ++this.requestGeneration; // A late reply must not enter a later conversation or grant testimony.
+        this.activeConversationTopic = null;
         if (this.view.conversation) {
             this.actions.clear();
             this.publish({ conversation: null, pendingAction: null, actionError: '' });

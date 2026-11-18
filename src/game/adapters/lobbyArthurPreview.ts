@@ -25,7 +25,7 @@ function boundedNumber(params: URLSearchParams, key: string, fallback: number, m
     return Number.isFinite(value) && value >= min && value <= max ? value : fallback;
 }
 
-/** Only the isolated production preview may select or reposition Option B Arthur. */
+/** Query-based selection and tuning remain limited to the isolated production preview. */
 export function resolveArthurPreviewQuery(search: string, productionPreview: boolean): ArthurPreviewSelection {
     const params = new URLSearchParams(search);
     return {

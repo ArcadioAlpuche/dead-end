@@ -3,14 +3,15 @@ import type { Point, Rect } from '../../core/model.ts';
 import { FOOT_RADIUS, INTERACTION_RADIUS } from '../../core/spatial.ts';
 import { LOBBY_PREVIEW_DESK } from './lobbyProductionCollision.ts';
 
-// Approved layout proposal only. These orange rectangles are drawn, never passed to movement.
+// Planning overlay only. Active footprints also appear in hotel.ts; proposed
+// furniture and plant rectangles remain visual marks, never movement obstacles.
 export const LOBBY_PROPOSED_DEBUG_OBSTACLES = [
     { label: 'Plant', x: 70, y: 540, width: 95, height: 75 },
     { label: 'West post', x: 320, y: 495, width: 32, height: 70 },
     { label: 'Left chair', x: 270, y: 625, width: 70, height: 50 },
     { label: 'Table', x: 425, y: 645, width: 70, height: 35 },
     { label: 'Right chair', x: 580, y: 625, width: 75, height: 50 },
-    { label: 'Desk', x: 730, y: 530, width: 280, height: 80 },
+    { label: 'Desk', x: 440, y: 530, width: 580, height: 60 },
     { label: 'East post', x: 1025, y: 495, width: 32, height: 70 },
     { label: 'Stair base', x: 1050, y: 530, width: 250, height: 40 },
 ] as const;

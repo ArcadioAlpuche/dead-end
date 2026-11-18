@@ -4,7 +4,7 @@ import type { LocationDefinition, Point } from './model.ts';
 export const FOOT_RADIUS = 13;
 export const INTERACTION_RADIUS = 86;
 
-export function canStand(location: LocationDefinition, point: Point): boolean {
+export function canStand(location: Pick<LocationDefinition, 'walkBounds' | 'obstacles'>, point: Point): boolean {
     const b = location.walkBounds;
     const r = FOOT_RADIUS;
     if (!Number.isFinite(point.x) || !Number.isFinite(point.y)

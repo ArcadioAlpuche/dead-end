@@ -1,4 +1,4 @@
-import type { SavedGame, WorldDefinition } from './model.ts';
+import type { LocationDefinition, SavedGame, WorldDefinition } from './model.ts';
 import { parseCaseStates } from './cases.ts';
 import { canStand } from './spatial.ts';
 
@@ -58,11 +58,37 @@ export function validateWorld(world: WorldDefinition): void {
 
 export function parseSave(value: unknown, world: WorldDefinition): SavedGame | null {
     if (!value || typeof value !== 'object') return null;
-    const data = value as Partial<Omit<SavedGame, 'version'>> & { version?: unknown };
-    if ((data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4) || data.contentVersion !== 'bellweather-1' || !data.player || !Array.isArray(data.discoveries)) return null;
+    const data = value as Partial<Omit<SavedGame, 'version' | 'contentVersion'>>
+        & { version?: unknown; contentVersion?: unknown };
+    if ((data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4)
+        || (data.contentVersion !== 'bellweather-1' && data.contentVersion !== 'bellweather-2' && data.contentVersion !== 'bellweather-3')
+        || (data.contentVersion !== 'bellweather-1' && data.version !== 4)
+        || !data.player || !Array.isArray(data.discoveries)) return null;
     const player = data.player;
     if (!Object.prototype.hasOwnProperty.call(world.locations, player.locationId) || (player.facing !== -1 && player.facing !== 1)) return null;
-    if (typeof player.x !== 'number' || typeof player.y !== 'number' || !canStand(world.locations[player.locationId], player)) return null;
+    if (typeof player.x !== 'number' || typeof player.y !== 'number') return null;
+    // Historical content revision: validate an old lobby position against its original
+    // furniture before moving only positions that the illustrated layout now blocks.
+    const oldLobby: Pick<LocationDefinition, 'walkBounds' | 'obstacles'> = {
+        walkBounds: { x: 30, y: 500, width: 1260, height: 165 },
+        obstacles: [{ x: 560, y: 500, width: 220, height: 45 }],
+    };
+    const previousLobby: Pick<LocationDefinition, 'walkBounds' | 'obstacles'> = {
+        walkBounds: { x: 30, y: 530, width: 1260, height: 238 },
+        obstacles: [
+            { x: 320, y: 495, width: 32, height: 70 },
+            { x: 440, y: 530, width: 580, height: 60 },
+            { x: 1025, y: 495, width: 32, height: 70 },
+            { x: 1050, y: 530, width: 250, height: 40 },
+        ],
+    };
+    const oldLobbySave = data.contentVersion === 'bellweather-1' && player.locationId === 'lobby';
+    const previousLobbySave = data.contentVersion === 'bellweather-2' && player.locationId === 'lobby';
+    if (!canStand(oldLobbySave ? oldLobby : previousLobbySave ? previousLobby : world.locations[player.locationId], player)) return null;
+    const safePlayer = (oldLobbySave || previousLobbySave) && !canStand(world.locations.lobby, player)
+        ? { ...player, x: world.locations.lobby.entries.arrival.x,
+            y: world.locations.lobby.entries.arrival.y }
+        : player;
     const seen = new Set<string>();
     for (const record of data.discoveries) {
         if (!record || typeof record !== 'object' || typeof record.id !== 'string'
@@ -94,5 +120,5 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
     // V1/v2 never contained case acceptance. Do not infer it from existing discoveries or memory.
     const cases = data.version === 3 || data.version === 4 ? parseCaseStates(data.cases, world.cases) : {};
     if (!cases) return null;
-    return { version: 4, cases, contentVersion: 'bellweather-1', player: { locationId: player.locationId, x: player.x, y: player.y, facing: player.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ ...event })) };
+    return { version: 4, cases, contentVersion: 'bellweather-3', player: { locationId: safePlayer.locationId, x: safePlayer.x, y: safePlayer.y, facing: safePlayer.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ ...event })) };
 }

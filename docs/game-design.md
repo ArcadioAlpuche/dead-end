@@ -76,6 +76,8 @@ This checkpoint policy is an unapproved alternative, not an implementation requi
 
 ## NPCs and free-form conversation
 
+The [NPC conversation design](dead-end-npc-conversation-design.md) records the established long-term contract: players speak in their own words, NPCs respond to meaning and context, and authored case facts remain authoritative. The M3 boundary described below is the current limited implementation of that design.
+
 **M3 prototype boundary:** arbitrary text may be typed, but only a small, authored whole-message topic grammar reaches an NPC. It recognizes several paraphrases and follow-ups. Unknown or potentially consequential messages remain private and prompt clarification before any NPC context update. Authored disclosure routing is tested with noncanonical fixtures only; no live reporting or other future case action is available. The existing exact accusation-memory demonstration is preserved. This is not unrestricted natural-language understanding.
 
 Important NPCs accept typed questions and statements. Their authored profiles distinguish facts known personally, beliefs, uncertainty, motivations, relationships, intentional lies, and observations of the detective. They may lie, evade, misunderstand, or misremember. They recognize meaningful follow-ups and repeated topics, without automatically confessing when contradicted. Background characters may remain entirely scripted.
