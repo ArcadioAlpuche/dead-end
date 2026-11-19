@@ -23,6 +23,20 @@ h1 { margin: 1px 0 0; font-size: 36px; line-height: 1.1; font-weight: normal; le
 .world-hud { position: absolute; inset: 0 0 auto; display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 25px; pointer-events: none; background: linear-gradient(#0c141af0, #0c141a00); }
 .world-hud h2 { font-size: 21px; font-weight: normal; margin: 3px 0 0; }
 .notebook-button { pointer-events: auto; display: flex; gap: 20px; align-items: center; font-size: 13px; background: #121b20d9; }
+.menu-controls { display: flex; gap: 8px; }
+.game-menu { color: #e8dfcc; background: #142126; border: 1px solid #75664c; padding: 28px; box-shadow: 0 18px 60px #0009; }
+.game-menu h2 { margin: 0 0 18px; font-size: 32px; font-weight: normal; }
+.game-menu h3 { font-weight: normal; }
+.game-menu button { display: block; width: 100%; margin: 6px 0; text-align: left; }
+.title-menu { min-height: min(70vh, 620px); }
+.menu-buttons { width: min(100%, 420px); }
+.game-menu-overlay { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 20px; background: #050b0dda; }
+.pause-menu { width: min(100%, 580px); max-height: 90vh; overflow-y: auto; }
+.investigation-list { max-height: 55vh; overflow-y: auto; }
+.investigation-choice strong, .investigation-choice span { display: block; }
+.investigation-choice strong { font-weight: normal; font-size: 16px; }
+.investigation-choice span { margin-top: 4px; color: #b4b6ad; font: 12px/1.5 system-ui, sans-serif; }
+.game-menu button:focus { outline: 2px solid #e5c482; outline-offset: 2px; background: #3b4644; }
 .entry-count { color: #c4a876; margin-left: 9px; }
 .world-caption { position: absolute; inset: auto 0 0; padding: 11px 25px 15px; background: #0c141a; min-height: 13%; }
 .interaction { margin: 0 0 7px; font-size: 14px; color: #dbc293; }

@@ -21,6 +21,7 @@ export class GameSession {
     private npcIdentities: Readonly<Record<string, NpcIdentityKnowledge>>;
     private requestGeneration = 0;
     private activeConversationTopic: string | null = null;
+    private paused = false;
     private readonly actions: ActionConfirmation<CaseActionContext>;
     private readonly responder: ConversationResponder;
     private readonly listeners = new Set<() => void>();
@@ -50,7 +51,12 @@ export class GameSession {
         return () => { this.listeners.delete(listener); };
     };
     getPlayer(): Player { return this.player; }
-    isBlocked(): boolean { return this.view.pendingAction !== null || this.view.notebookOpen || this.view.conversation !== null; }
+    isBlocked(): boolean { return this.paused || this.view.pendingAction !== null || this.view.notebookOpen || this.view.conversation !== null; }
+    setPaused(paused: boolean): void {
+        if (this.paused === paused) return;
+        this.paused = paused;
+        this.publish({});
+    }
     getSave(): SavedGame {
         return { version: 5, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-3', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })), npcIdentities: { ...this.npcIdentities } };
     }

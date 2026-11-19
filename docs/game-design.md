@@ -103,10 +103,10 @@ Inspected November 15, 2026:
 | Conversation input/focus isolation, pending/error handling, late-reply guard | Transcript capped at 80 lines and cleared on exit/reload; message limit 2,000 characters; typed topic/statement and limited irritation memory persists |
 | Three Room 407 observations plus one attributed receptionist account | No suitcase, register, ledger, theory comparison, verified-fact graph, or outcomes |
 | Public Evelyn offer, explicit accept/defer, stable case-state map, timestamped acceptance history | One shipped assignment; no withdrawal, reopening, resolution, payment, or chapter unlocking |
-| Local save schema v5, content revision `bellweather-3`, v1–v4 and historical lobby-layout migration, preserved unreadable saves | Saves hold player, discoveries, NPC memories, separate identity knowledge, and cases; no chapter state, checkpoint UI, export/import or recovery UI |
+| Local save schema v5, content revision `bellweather-3`, v1–v4 and historical lobby-layout migration, independent investigations with one autosave and three manual slots each | Saves hold player, discoveries, NPC memories, separate identity knowledge, and cases; no chapter state, conversation transcript persistence, export/import or cross-device recovery |
 | Automated tests across actions, cases, exploration, conversation, NPC knowledge and animation | Action propose/confirm/cancel, disclosure fixtures, case commands, discovery independence, migration, persistence and input policy are covered; future outcomes/progression remain unimplemented |
 
-Normal movement checkpoints every two seconds; meaningful state changes also save. Storage is one browser-origin slot with historical key `dead-end.bellweather.v1`; schema version is inside the envelope. Case knowledge must remain separate from generated conversation text as the model expands.
+Normal movement checkpoints every two seconds; meaningful state changes also save. The title screen opens, creates or continues investigations; the in-game pause menu saves, loads, restarts with confirmation, or returns to title. Restart resets the active autosave without deleting its three manual slots. Storage remains browser-origin `localStorage`; the historical single-slot key `dead-end.bellweather.v1` is imported once and preserved. Schema version remains inside each game snapshot. Case knowledge must remain separate from generated conversation text as the model expands.
 
 ## Commercial model and content boundaries
 

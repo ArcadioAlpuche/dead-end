@@ -202,11 +202,11 @@ The Bellweather location graph supports reversible travel through lobby, stairca
 
 ## Local persistence
 
-Start with a browser `localStorage` adapter and one local save slot for the small slice. Keep the storage interface replaceable if save size or later requirements justify IndexedDB. The core produces a serializable snapshot and does not call browser APIs.
+The game uses browser `localStorage` through `InvestigationStore`. Each independent investigation has a stable ID, one autosave, and three manual snapshots. A small index lists IDs; each investigation is stored under its own key, so a damaged record does not block healthy investigations. The core still produces the same v5 serializable snapshot and does not call browser APIs. Keep the storage adapter replaceable if save size or later requirements justify IndexedDB.
 
 The save envelope includes a schema version, content version, and committed mutable state. Store IDs and values, never scenes, functions, event emitters, or authored solution copies. Save after meaningful changes and completed transitions; checkpoint movement at a throttled interval rather than writing every frame. Explicitly document that abrupt closure can lose movement since the last checkpoint.
 
-On load, validate shape, versions, references, and the player spawn before applying state. Migrate only supported old versions. Invalid, newer, or incompatible saves must produce a clear recovery choice; do not silently discard discoveries or overwrite the unreadable save. Handle unavailable storage and quota failures by keeping the session playable and showing that saving failed. Save error messages belong in React.
+On load, validate shape, versions, references, and the player spawn before applying state. The original single-save key is imported once through the existing v1–v5 parser and is never removed or overwritten. A selected manual snapshot becomes the active session and updates only its investigation's autosave; restart replaces that autosave with initial state and leaves manual slots intact. Invalid records are skipped in the menu with a warning and preserved in storage. An invalid index blocks saving rather than overwriting unknown data. If storage is unavailable or full, New Game still opens an explicitly unsaved session and React shows a warning. There is no cross-device transfer or export/import yet.
 
 ## Future AI dialogue boundary
 
