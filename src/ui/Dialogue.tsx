@@ -1,10 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { Conversation, LocationId } from '../core/model';
+import type { Conversation, DialogueLine, LocationId } from '../core/model';
 import { MAX_MESSAGE_LENGTH } from '../core/conversation';
 import { session } from '../runtime';
 import { conversationInputAction, conversationInputHeight } from './conversationInput';
 import { conversationShortcutAction } from './conversationShortcuts';
 import { conversationScene, KANE_CONVERSATION_PORTRAIT, latestExchange, npcConversationPortrait, npcConversationRole } from './conversationPresentation';
+import { downloadConversationExport, formatConversationExport, recordRejectedInput, rememberOriginalInput } from './developmentConversationExport';
+import type { RejectedConversationInput } from './developmentConversationExport';
 
 function fitQuestionField(element: HTMLTextAreaElement) {
     const style = getComputedStyle(element);
@@ -21,6 +23,8 @@ export function Dialogue({ conversation, locationId }: { conversation: Conversat
     const historyButton = useRef<HTMLButtonElement>(null);
     const historyClose = useRef<HTMLButtonElement>(null);
     const historyLog = useRef<HTMLDivElement>(null);
+    const originalInputs = useRef(new WeakMap<DialogueLine, string>());
+    const rejectedInputs = useRef<readonly RejectedConversationInput[]>([]);
     const [draft, setDraft] = useState('');
     const [historyOpen, setHistoryOpen] = useState(false);
     const scene = conversationScene(locationId);
@@ -51,11 +55,29 @@ export function Dialogue({ conversation, locationId }: { conversation: Conversat
     const submit = () => {
         if (conversation.pending || !draft.trim()) return;
         const submitted = draft;
+        const previousHistory = session.getSnapshot().conversation?.history ?? [];
         void session.submitMessage(submitted).then(sent => {
+            const current = session.getSnapshot();
+            if (import.meta.env.DEV && panel.current && current.conversation?.id === conversation.id) {
+                if (sent) rememberOriginalInput(originalInputs.current, current.conversation.history, submitted, previousHistory);
+                else rejectedInputs.current = recordRejectedInput(rejectedInputs.current, {
+                    text: submitted, message: current.conversation.error, at: new Date().toISOString(),
+                    sent, actionPending: current.pendingAction !== null,
+                });
+            }
             // Clarification leaves the unsent draft editable, outside NPC history/context.
             if (sent) setDraft(current => current === submitted ? '' : current);
         });
         input.current?.focus();
+    };
+    const exportConversation = () => {
+        const definition = session.world.conversations[conversation.id];
+        if (!definition) return;
+        const exportedAt = new Date().toISOString();
+        const content = formatConversationExport({ npcName: conversation.name, npcId: definition.npcId,
+            buildMode: import.meta.env.MODE, exportedAt, history: conversation.history,
+            originalInputByLine: originalInputs.current, rejected: rejectedInputs.current });
+        downloadConversationExport(definition.npcId, exportedAt, content);
     };
 
     return <div className="modal-scrim dialogue-scrim">
@@ -135,7 +157,10 @@ export function Dialogue({ conversation, locationId }: { conversation: Conversat
 
             {historyOpen && <div id="conversation-history-panel" className="dialogue-history-panel" role="region" aria-label="Conversation history">
                 <div className="dialogue-history-heading"><h3>Conversation history</h3>
-                    <button ref={historyClose} type="button" onClick={closeHistory}>Close history <kbd>Esc</kbd></button></div>
+                    <div className="dialogue-history-actions">
+                        {import.meta.env.DEV && <button type="button" onClick={exportConversation}>Export Conversation</button>}
+                        <button ref={historyClose} type="button" onClick={closeHistory}>Close history <kbd>Esc</kbd></button>
+                    </div></div>
                 <div ref={historyLog} className="conversation-history" role="log" aria-label="Conversation history" aria-live="off">
                     {conversation.history.map((line, index) => <p key={index}><strong>{line.speaker === 'Detective' ? 'Thomas Kane' : line.speaker}</strong><span>{line.text}</span></p>)}
                 </div>

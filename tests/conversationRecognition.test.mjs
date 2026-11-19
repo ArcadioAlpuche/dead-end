@@ -32,6 +32,9 @@ test('profile-driven recognition accepts complete natural questions and bounded 
         ['Tell me about the guy in Room 407.', 'room', 'person-about'],
         ['wat do u know bout daniel?', 'account', 'person-about'],
         ['did daniel chek out?', 'account', 'person-departure'],
+        ['Did Daniel checkout?', 'account', 'person-departure'],
+        ['Who is Daniel?', 'account', 'person-identity-inquiry'],
+        ['Who stayed in Room 407?', 'room', 'place-occupant'],
         ['where did daniel go', 'account', 'person-whereabouts'],
         ['you seen mercer', 'account', 'person-sighting'],
         ['wats ur name', 'introduction', undefined],
@@ -51,7 +54,7 @@ test('the same question grammar resolves subjects through each NPC profile', () 
     assert.deepEqual(route('What do you know about Daniel Mercer?', hotel.conversations.client),
         { kind: 'ordinary', topic: 'assignment' });
     const custom = { ...hotel.conversations.reception, npcId: 'fixture-npc', topics: {
-        person: { id: 'person', recognition: [{ kind: 'person', aliases: ['Ada Gray'] }] },
+        person: { id: 'person', recognition: [{ entityId: 'ada-gray', kind: 'person', aliases: ['Ada Gray'] }] },
     } };
     assert.deepEqual(route('What do you know about Ada Gray?', custom),
         { kind: 'ordinary', topic: 'person', intent: 'person-about' });
@@ -123,6 +126,11 @@ test('questions, negation, unrelated names, mixed clauses and fuzzy protected ac
         'What do you know about Daniel Mercer? He is at 12 Baker Lane.',
         'What do you know about Daniel Mercer? I know where he is.',
         'Did Daniel chek out and go to 12 Baker Lane?',
+        'Did Daniel checkout and leave the hotel?',
+        'Who stayed in Room 408?',
+        'Who stayed in Room 407? I know who it was.',
+        'Who stayed in Room 407 and what did they leave?',
+        'Who is Michael Mercer?',
     ];
     for (const text of unsafe) {
         assert.equal(route(text).kind, 'clarify', text);
@@ -144,7 +152,7 @@ test('ambiguous profile aliases are rejected before an NPC can use them', () => 
     const profile = hotel.conversations.reception;
     const world = { ...hotel, conversations: { ...hotel.conversations, reception: { ...profile,
         topics: { ...profile.topics, register: { ...profile.topics.register,
-            recognition: [{ kind: 'person', aliases: ['Daniel Mercer'] }] } },
+            recognition: [{ entityId: 'daniel-mercer', kind: 'person', aliases: ['Daniel Mercer'] }] } },
     } } };
     assert.throws(() => validateWorld(world), /Ambiguous topic alias/);
 });

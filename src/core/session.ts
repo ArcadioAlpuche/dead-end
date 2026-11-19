@@ -1,11 +1,12 @@
 import type { CaseState, Discovery, Entry, Interaction, KaneFactId, NpcContactState, NpcIdentityKnowledge, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
 import { casebookEntries, copyCaseStates } from './cases.ts';
 import { MAX_HISTORY_LINES, MAX_MESSAGE_LENGTH } from './conversation.ts';
+import type { ConversationContext } from './conversation.ts';
 import { ActionConfirmation } from './actions.ts';
 import type { ActionRequest } from './actions.ts';
 import { caseActionPolicy } from './caseActions.ts';
 import type { CaseActionContext } from './caseActions.ts';
-import { routeConversationInput } from './conversationBoundary.ts';
+import { questionSubject, routeConversationInput } from './conversationBoundary.ts';
 import type { ConversationResponder } from './conversation.ts';
 import { frictionCount, lastDiscussedTopic, rememberOnce, setFriction } from './npcMemory.ts';
 import { establishNpcIdentity, npcDisplayName } from './npcIdentity.ts';
@@ -23,7 +24,7 @@ export class GameSession {
     private npcIdentities: Readonly<Record<string, NpcIdentityKnowledge>>;
     private npcContacts: Readonly<Record<string, NpcContactState>>;
     private requestGeneration = 0;
-    private activeConversationTopic: string | null = null;
+    private conversationContext: ConversationContext | null = null;
     private paused = false;
     private readonly actions: ActionConfirmation<CaseActionContext>;
     private readonly responder: ConversationResponder;
@@ -116,7 +117,7 @@ export class GameSession {
         } else {
             const definition = this.world.conversations[target.conversationId];
             const name = npcDisplayName(definition, this.npcIdentities[definition.npcId]);
-            this.activeConversationTopic = null;
+            this.conversationContext = null;
             const remembers = this.npcMemories.some(event => event.npcId === definition.npcId && event.kind === 'accused');
             const returning = this.npcContacts[definition.npcId] !== undefined;
             this.npcContacts = registerEncounter(this.npcContacts, definition.npcId, Date.now());
@@ -135,7 +136,8 @@ export class GameSession {
         if (!conversation || conversation.pending || this.view.pendingAction || !text || text.length > MAX_MESSAGE_LENGTH) return false;
         const definition = this.world.conversations[conversation.id];
         // This boundary precedes transcript, memory, authored testimony and responder dispatch.
-        const route = routeConversationInput(text, definition.npcId, [], this.activeConversationTopic, definition);
+        const route = routeConversationInput(text, definition.npcId, [], this.conversationContext?.topicId ?? null,
+            definition, this.conversationContext);
         if (route.kind === 'clarify') {
             this.publish({ conversation: { ...conversation, error: route.message } });
             return false;
@@ -146,6 +148,7 @@ export class GameSession {
         }
         if (route.kind === 'player-disclosure') {
             for (const fact of route.facts) this.npcContacts = recordPlayerDisclosure(this.npcContacts, definition.npcId, fact, Date.now());
+            this.conversationContext = null;
             const history = [...conversation.history, { speaker: 'Detective', text },
                 { speaker: conversation.name, text: definition.disclosureReply ?? 'They acknowledge the introduction.' }].slice(-MAX_HISTORY_LINES);
             this.publish({ conversation: { ...conversation, history, error: '' } });
@@ -153,7 +156,8 @@ export class GameSession {
         }
         const topic = route.topic;
         const authored = definition.topics[topic === 'follow-up'
-            ? route.intent ? this.activeConversationTopic ?? '' : this.activeConversationTopic ?? lastDiscussedTopic(this.npcMemories, definition.npcId) ?? ''
+            ? route.intent ? this.conversationContext?.topicId ?? ''
+                : this.conversationContext?.topicId ?? lastDiscussedTopic(this.npcMemories, definition.npcId) ?? ''
             : topic];
         if (['account', 'room', 'register', 'assignment', 'introduction', 'follow-up'].includes(topic) && !authored) {
             this.publish({ conversation: { ...conversation, error: 'Not sent. Ask about a specific topic first.' } });
@@ -202,8 +206,13 @@ export class GameSession {
                 : authored?.line && { ...authored.line, speaker: name };
             const lines = [...history, { speaker: name, text: response }, ...(line ? [line] : [])].slice(-MAX_HISTORY_LINES);
             this.publish({ conversation: { ...conversation, name, history: lines, pending: false, error: '' } });
-            if (authored && topic !== 'follow-up') this.activeConversationTopic = authored.id;
-            else if (!authored) this.activeConversationTopic = null;
+            if (authored && (topic !== 'follow-up' || !route.intent)) {
+                const replyContext = authored.replyContext?.[route.intent ?? 'default'] ?? authored.replyContext?.default;
+                this.conversationContext = { npcId: definition.npcId, topicId: authored.id,
+                    questionSubject: topic === 'follow-up' ? undefined : questionSubject(text, definition) ?? undefined,
+                    replyReferents: replyContext?.referents ?? [], focus: replyContext?.focus,
+                    statementId: isAuthoredStatement ? `${definition.npcId}:${authored.id}` : undefined };
+            } else if (!authored) this.conversationContext = null;
             if (authored && topic !== 'follow-up') {
                 this.npcMemories = rememberOnce(this.npcMemories, { kind: 'topic', npcId: definition.npcId,
                     topicId: authored.id, locationId: this.player.locationId, recordedAt: Date.now() });
@@ -223,7 +232,7 @@ export class GameSession {
     }
     closeDialogue(): void {
         ++this.requestGeneration; // A late reply must not enter a later conversation or grant testimony.
-        this.activeConversationTopic = null;
+        this.conversationContext = null;
         if (this.view.conversation) {
             this.actions.clear();
             this.publish({ conversation: null, pendingAction: null, actionError: '' });

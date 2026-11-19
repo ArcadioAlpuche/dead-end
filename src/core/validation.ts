@@ -67,6 +67,9 @@ export function validateWorld(world: WorldDefinition): void {
                 if (!Array.isArray(topic.recognition)) throw new Error(`Invalid topic recognition: ${topicId}`);
                 for (const group of topic.recognition) {
                     if (!group || !['person', 'place', 'object', 'event'].includes(group.kind)
+                        || typeof group.entityId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(group.entityId)
+                        || (group.identity !== undefined && (group.kind !== 'person'
+                            || !['named', 'unknown', 'questioned'].includes(group.identity)))
                         || !Array.isArray(group.aliases) || !group.aliases.length) throw new Error(`Invalid topic recognition: ${topicId}`);
                     if (group.directIntents && (group.kind !== 'person' || !Array.isArray(group.directIntents)
                         || group.directIntents.some((intent: unknown) => intent !== 'person-about'))) throw new Error(`Invalid direct intent: ${topicId}`);
@@ -75,6 +78,20 @@ export function validateWorld(world: WorldDefinition): void {
                         const key = `${group.kind}:${alias.trim().toLowerCase().replace(/\s+/g, ' ')}`;
                         if (subjectAliases.has(key)) throw new Error(`Ambiguous topic alias: ${key}`);
                         subjectAliases.add(key);
+                    }
+                }
+            }
+            if (topic.replyContext) {
+                for (const [intent, reply] of Object.entries(topic.replyContext)) {
+                    if (intent !== 'default' && !Object.prototype.hasOwnProperty.call(topic.contextualReplies ?? {}, intent)) {
+                        throw new Error(`Invalid reply context: ${topicId}/${intent}`);
+                    }
+                    if (!reply || !Array.isArray(reply.referents)
+                        || reply.referents.some(ref => !ref || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(ref.id)
+                            || !['person', 'place', 'object', 'event'].includes(ref.kind)
+                            || (ref.identity !== undefined && (ref.kind !== 'person'
+                                || !['named', 'unknown', 'questioned'].includes(ref.identity))))) {
+                        throw new Error(`Invalid reply context: ${topicId}/${intent}`);
                     }
                 }
             }

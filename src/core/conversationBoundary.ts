@@ -1,5 +1,5 @@
 import type { ActionRequest } from './actions.ts';
-import type { ConversationTopic } from './conversation.ts';
+import type { ConversationContext, ConversationReferent, ConversationTopic } from './conversation.ts';
 import type { ConversationDefinition, KaneFactId } from './model.ts';
 import { classifyMessage } from './conversation.ts';
 
@@ -10,7 +10,10 @@ export interface DisclosureRoute {
 }
 export type ConversationRoute =
     | { readonly kind: 'ordinary'; readonly topic: ConversationTopic; readonly intent?: 'where-seen-person-went' | 'room-belongings'
-        | 'person-about' | 'person-acquaintance' | 'person-sighting' | 'person-departure' | 'person-whereabouts' }
+        | 'person-about' | 'person-acquaintance' | 'person-sighting' | 'person-departure' | 'person-whereabouts'
+        | 'person-clothing' | 'person-face' | 'person-identity' | 'person-identity-inquiry' | 'person-about-context' | 'person-speech'
+        | 'place-occupant' | 'place-where' | 'sighting-when' | 'sighting-where' | 'event-next'
+        | 'checkout-when' | 'checkout-sure' }
     | { readonly kind: 'player-disclosure'; readonly facts: readonly KaneFactId[] }
     | { readonly kind: 'action'; readonly request: ActionRequest }
     | { readonly kind: 'clarify'; readonly message: string };
@@ -72,38 +75,95 @@ const contextualQuestions = [
 const subjectQuestions = [
     { pattern: /^(?:what do you know about|what can you tell me about|tell me about|you know anything about) (.+)$/, kinds: ['person', 'place', 'object', 'event'], personIntent: 'person-about' },
     { pattern: /^(?:do you know|you know) (.+)$/, kinds: ['person'], personIntent: 'person-acquaintance' },
+    { pattern: /^who is (.+)$/, kinds: ['person'], personIntent: 'person-identity-inquiry' },
     { pattern: /^(?:have you seen|you seen|did you see) (.+)$/, kinds: ['person'], personIntent: 'person-sighting' },
-    { pattern: /^did (.+) check out$/, kinds: ['person'], personIntent: 'person-departure' },
+    { pattern: /^did (.+) check ?out$/, kinds: ['person'], personIntent: 'person-departure' },
     { pattern: /^where did (.+) go$/, kinds: ['person'], personIntent: 'person-whereabouts' },
+    { pattern: /^who stayed in (.+)$/, kinds: ['place'], placeIntent: 'place-occupant' },
     { pattern: /^(?:where is|where can i find|how do i get to) (.+)$/, kinds: ['place', 'object'] },
     { pattern: /^(?:can i see|may i see|can i inspect) (.+)$/, kinds: ['object'] },
     { pattern: /^what did you (?:see|notice|witness) (.+)$/, kinds: ['event'] },
 ] as const;
 
-function routeSubjectQuestion(text: string, profile: ConversationDefinition): ConversationRoute | null {
+function matchSubjectQuestion(text: string, profile: ConversationDefinition): { route: ConversationRoute; subject: ConversationReferent } | null {
     for (const question of subjectQuestions) {
-        const subject = question.pattern.exec(text)?.[1];
-        if (!subject) continue;
+        const subjectText = question.pattern.exec(text)?.[1];
+        if (!subjectText) continue;
         const matches = Object.values(profile.topics).flatMap(topic => (topic.recognition ?? [])
             .filter(group => (question.kinds as readonly string[]).includes(group.kind)
-                && group.aliases.some(alias => normalizeCasual(alias) === subject))
-            .map(group => ({ topic, kind: group.kind, directIntents: group.directIntents })));
+                && group.aliases.some(alias => normalizeCasual(alias) === subjectText))
+            .map(group => ({ topic, group })));
         if (matches.length !== 1) return null; // Unknown or ambiguous subject: fail closed.
         const match = matches[0];
-        if (match.kind === 'person') {
+        const subject: ConversationReferent = { id: match.group.entityId, kind: match.group.kind,
+            ...(match.group.kind === 'person' ? { identity: match.group.identity ?? 'named' } : {}) };
+        if (match.group.kind === 'person') {
             if (!('personIntent' in question)) return null;
-            if (question.personIntent === 'person-about' && match.directIntents?.includes('person-about')) {
-                return { kind: 'ordinary', topic: match.topic.id as ConversationTopic };
+            if (question.personIntent === 'person-about' && match.group.directIntents?.includes('person-about')) {
+                return { route: { kind: 'ordinary', topic: match.topic.id as ConversationTopic }, subject };
             }
-            return { kind: 'ordinary', topic: match.topic.id as ConversationTopic, intent: question.personIntent };
+            return { route: { kind: 'ordinary', topic: match.topic.id as ConversationTopic, intent: question.personIntent }, subject };
         }
-        return { kind: 'ordinary', topic: match.topic.id as ConversationTopic };
+        if (match.group.kind === 'place' && 'placeIntent' in question) {
+            return { route: { kind: 'ordinary', topic: match.topic.id as ConversationTopic, intent: question.placeIntent }, subject };
+        }
+        return { route: { kind: 'ordinary', topic: match.topic.id as ConversationTopic }, subject };
     }
     return null;
 }
 
+export function questionSubject(text: string, profile: ConversationDefinition): ConversationReferent | null {
+    return matchSubjectQuestion(normalizeCasual(text), profile)?.subject ?? null;
+}
+
+const contextClarification = (person: boolean): ConversationRoute => ({ kind: 'clarify',
+    message: person ? 'Not sent. Who do you mean?' : 'Not sent. Which place do you mean?' });
+const topicClarification = (): ConversationRoute => ({ kind: 'clarify', message: 'Not sent. What are you referring to?' });
+
+function resolveReferent(context: ConversationContext, kind: 'person' | 'place'): ConversationReferent | null | 'ambiguous' {
+    const replies = context.replyReferents.filter(item => item.kind === kind);
+    if (replies.length > 1) return 'ambiguous';
+    if (replies.length === 1) return replies[0];
+    // A name in Kane's question is not evidence that Arthur's reply identified that person.
+    return null;
+}
+
+function routeContextualQuestion(text: string, context: ConversationContext): ConversationRoute | null {
+    const followUp = (intent: Extract<ConversationRoute, { kind: 'ordinary' }>['intent']): ConversationRoute =>
+        ({ kind: 'ordinary', topic: 'follow-up', intent });
+    const person = /^(?:what was (?:he|she|they) wearing|did you see (?:his|her|their) face|what about (?:him|her|them)|what did (?:he|she|they) say|do you know where (?:he|she|they|that person) went)$/.test(text);
+    if (person) {
+        const referent = resolveReferent(context, 'person');
+        if (!referent || referent === 'ambiguous') return contextClarification(true);
+        if (/^what was/.test(text)) return followUp('person-clothing');
+        if (/^did you see/.test(text)) return followUp('person-face');
+        if (/^what about/.test(text)) return followUp('person-about-context');
+        if (/^what did/.test(text)) return followUp('person-speech');
+        return context.focus === 'sighting' ? followUp('where-seen-person-went') : contextClarification(true);
+    }
+    if (/^(?:who stayed there|did (?:someone|anyone) leave (?:their|any) things in there)$/.test(text)) {
+        const referent = resolveReferent(context, 'place');
+        if (!referent || referent === 'ambiguous') return contextClarification(false);
+        return text.startsWith('who') ? followUp('place-occupant') : followUp('room-belongings');
+    }
+    if (text === 'when') return context.focus === 'checkout' ? followUp('checkout-when')
+        : context.focus === 'sighting' ? followUp('sighting-when') : topicClarification();
+    if (text === 'where') return context.focus === 'sighting' ? followUp('sighting-where')
+        : context.focus === 'room' ? followUp('place-where') : topicClarification();
+    if (text === 'who') {
+        const referent = resolveReferent(context, 'person');
+        if (referent === 'ambiguous') return contextClarification(true);
+        if (referent) return followUp('person-identity');
+        const place = resolveReferent(context, 'place');
+        return place && place !== 'ambiguous' ? followUp('place-occupant') : contextClarification(true);
+    }
+    if (text === 'what happened next') return context.focus === 'sighting' ? followUp('event-next') : topicClarification();
+    if (text === 'are you sure' && context.focus === 'checkout') return followUp('checkout-sure');
+    return null;
+}
+
 export function routeConversationInput(text: string, recipientId: string, disclosures: readonly DisclosureRoute[] = [],
-    activeTopic: string | null = null, profile?: ConversationDefinition): ConversationRoute {
+    activeTopic: string | null = null, profile?: ConversationDefinition, context?: ConversationContext | null): ConversationRoute {
     const normalized = normalize(text);
     // Trusted authored routes identify information, never extract arbitrary world mutations.
     const matches = disclosures.filter(route => normalize(route.phrase) === normalized);
@@ -120,6 +180,10 @@ export function routeConversationInput(text: string, recipientId: string, disclo
     if (classifyMessage(text) === 'accusation') {
         return { kind: 'ordinary', topic: 'accusation' };
     }
+    if (context?.npcId === recipientId) {
+        const followUp = routeContextualQuestion(casual, context);
+        if (followUp) return followUp;
+    }
     const topic = ordinary.get(casual);
     if (topic) return { kind: 'ordinary', topic };
     const authoredQuestion = authoredQuestions.find(question => question.pattern.test(casual));
@@ -127,8 +191,8 @@ export function routeConversationInput(text: string, recipientId: string, disclo
     const contextual = contextualQuestions.find(question => question.context === activeTopic && question.pattern.test(casual));
     if (contextual) return { kind: 'ordinary', topic: 'follow-up', intent: contextual.intent };
     if (profile?.npcId === recipientId) {
-        const question = routeSubjectQuestion(casual, profile);
-        if (question) return question;
+        const question = matchSubjectQuestion(casual, profile);
+        if (question) return question.route;
     }
     // Fail closed, including addresses, paraphrases, mixed messages and unsupported actions.
     // No claim of general natural-language understanding; no raw text reaches NPC context.

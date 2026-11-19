@@ -1,5 +1,9 @@
 import type { ConversationDefinition } from '../core/model.ts';
 
+const midnightVisitor = { id: 'bellweather-midnight-visitor', kind: 'person', identity: 'unknown' } as const;
+const room407 = { id: 'room-407', kind: 'place' } as const;
+const daniel = { id: 'daniel-mercer', kind: 'person', identity: 'named' } as const;
+
 // These are public, attributed statements. A stance describes the speaker's basis,
 // not an omniscient verdict. Proposed Chapter 1 secrets are deliberately absent.
 export const npcConversations: Readonly<Record<string, ConversationDefinition>> = {
@@ -25,24 +29,41 @@ export const npcConversations: Readonly<Record<string, ConversationDefinition>> 
                 line: { speaker: 'Arthur Finch', text: 'Someone came down from upstairs around midnight, carrying a coat. I couldn’t tell you which room. That’s all I saw.', recordId: 'receptionist-account' },
                 followUp: '“I saw a coat and someone coming down. I did not see a face or which room they left.”',
                 recognition: [
-                    { kind: 'event', aliases: ['last night', 'midnight', 'around midnight'] },
-                    { kind: 'person', aliases: ['daniel mercer', 'daniel', 'mercer'] },
+                    { entityId: 'bellweather-midnight-sighting', kind: 'event', aliases: ['last night', 'midnight', 'around midnight'] },
+                    { entityId: 'daniel-mercer', kind: 'person', aliases: ['daniel mercer', 'daniel', 'mercer'] },
                 ],
+                replyContext: {
+                    default: { referents: [midnightVisitor], focus: 'sighting' },
+                    'person-acquaintance': { referents: [] },
+                    'person-identity-inquiry': { referents: [] },
+                    'person-departure': { referents: [midnightVisitor], focus: 'checkout' },
+                },
                 contextualReplies: {
                     'where-seen-person-went': '“I saw someone come down, but I did not see where they went afterward. I did not see a face or which room they left.”',
                     'person-about': '“I saw someone come down from upstairs around midnight, carrying a coat. I did not see a face, so I cannot identify that person as Daniel Mercer.”',
                     'person-acquaintance': '“A name alone is not enough for me to identify the person you mean.”',
+                    'person-identity-inquiry': '“I cannot tell you who Daniel Mercer is. I did not identify the person I saw.”',
                     'person-sighting': '“I saw someone come down around midnight, but I did not see a face. I cannot say it was Daniel Mercer.”',
                     'person-departure': '“I cannot say whether Daniel Mercer checked out. I did not see which room the person came from.”',
                     'person-whereabouts': '“I did not see where the person went afterward, and I cannot say it was Daniel Mercer.”',
+                    'person-clothing': '“They were carrying a coat. I could not tell you what they wore.”',
+                    'person-face': '“I did not see a face.”',
+                    'person-identity': '“I did not see a face, so I cannot identify the person.”',
+                    'person-about-context': '“I saw someone come down from upstairs carrying a coat. I did not see a face.”',
+                    'sighting-when': '“Around midnight, as far as I could tell.”',
+                    'sighting-where': '“Coming down from upstairs. I could not tell which room they left.”',
+                    'event-next': '“I did not see where they went afterward.”',
+                    'checkout-when': '“I cannot say whether or when Daniel Mercer checked out.”',
+                    'checkout-sure': '“I cannot say that Daniel Mercer checked out.”',
                 } },
             room: { id: 'room', stance: 'procedure',
                 line: { speaker: 'Arthur Finch', text: '407 is vacant and unlocked for inspection. Fourth floor, three flights up. Please leave everything where you find it.' },
                 followUp: '“The stairs are through that door. Three flights up, then look for 407.”',
                 recognition: [
-                    { kind: 'place', aliases: ['room 407', '407', 'the fourth floor', 'fourth floor', 'the stairs', 'stairs'] },
-                    { kind: 'person', aliases: ['the guy in room 407', 'the man in room 407', 'someone in room 407'] },
+                    { entityId: 'room-407', kind: 'place', aliases: ['room 407', '407', 'the fourth floor', 'fourth floor', 'the stairs', 'stairs'] },
+                    { entityId: 'questioned-room-407-person', kind: 'person', identity: 'questioned', aliases: ['the guy in room 407', 'the man in room 407', 'someone in room 407'] },
                 ],
+                replyContext: { default: { referents: [room407], focus: 'room' } },
                 contextualReplies: {
                     'room-belongings': '“I cannot say what anyone left in 407. The room is open for inspection; I would rather not guess about its contents.”',
                     'person-about': '“I cannot tell you who, if anyone, was in 407. The room is vacant and unlocked for inspection.”',
@@ -50,11 +71,14 @@ export const npcConversations: Readonly<Record<string, ConversationDefinition>> 
                     'person-sighting': '“I cannot tell you who, if anyone, was in 407.”',
                     'person-departure': '“I cannot tell you who, if anyone, was in 407.”',
                     'person-whereabouts': '“I cannot tell you who, if anyone, was in 407.”',
+                    'place-occupant': '“I cannot tell you who, if anyone, stayed in 407.”',
+                    'place-where': '“Fourth floor, three flights up.”',
                 } },
             register: { id: 'register', stance: 'procedure',
                 line: { speaker: 'Arthur Finch', text: 'The guest register is here at the front desk.' },
                 followUp: '“The register stays at the front desk.”',
-                recognition: [{ kind: 'object', aliases: ['guest register', 'the guest register', 'register', 'the register'] }] },
+                recognition: [{ entityId: 'bellweather-guest-register', kind: 'object', aliases: ['guest register', 'the guest register', 'register', 'the register'] }],
+                replyContext: { default: { referents: [{ id: 'bellweather-guest-register', kind: 'object' }] } } },
         },
     },
     porter: {
@@ -74,7 +98,7 @@ export const npcConversations: Readonly<Record<string, ConversationDefinition>> 
             account: { id: 'account', stance: 'evasion',
                 line: { speaker: 'Thomas Bell', text: 'I was working. I did not keep an account of every guest who crossed the lobby.' },
                 followUp: '“I said I was working. I will not invent a sighting for you.”',
-                recognition: [{ kind: 'person', aliases: ['daniel mercer', 'daniel', 'mercer'] }],
+                recognition: [{ entityId: 'daniel-mercer', kind: 'person', aliases: ['daniel mercer', 'daniel', 'mercer'] }],
                 contextualReplies: {
                     'person-about': '“I was working. I did not keep an account of every guest who crossed the lobby.”',
                     'person-acquaintance': '“I was working. I did not keep an account of every guest who crossed the lobby.”',
@@ -107,14 +131,17 @@ export const npcConversations: Readonly<Record<string, ConversationDefinition>> 
                 line: { speaker: 'Evelyn Mercer', text: 'Daniel is my brother. I am worried about him, and I would like your help finding him.' },
                 followUp: '“I am asking you to look for Daniel. I can give you no certainty about where he is.”',
                 recognition: [
-                    { kind: 'person', aliases: ['daniel mercer', 'daniel', 'mercer'], directIntents: ['person-about'] },
-                    { kind: 'object', aliases: ['the assignment', 'your assignment', 'the job', 'your request'] },
+                    { entityId: 'daniel-mercer', kind: 'person', aliases: ['daniel mercer', 'daniel', 'mercer'], directIntents: ['person-about'] },
+                    { entityId: 'case-001-assignment', kind: 'object', aliases: ['the assignment', 'your assignment', 'the job', 'your request'] },
                 ],
+                replyContext: { default: { referents: [daniel], focus: 'assignment' } },
                 contextualReplies: {
                     'person-acquaintance': 'Daniel is my brother. I am worried about him, and I would like your help finding him.',
+                    'person-identity-inquiry': '“Daniel is my brother. I am worried about him.”',
                     'person-sighting': '“I am asking you to look for Daniel. I can give you no certainty about where he is.”',
                     'person-departure': '“I am asking you to look for Daniel. I can give you no certainty about where he is.”',
                     'person-whereabouts': '“I am asking you to look for Daniel. I can give you no certainty about where he is.”',
+                    'person-about-context': '“Daniel is my brother. I can give you no certainty about where he is.”',
                 } },
         },
     },

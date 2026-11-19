@@ -1,4 +1,5 @@
 import type { PendingAction } from './actions.ts';
+import type { ConversationReferent } from './conversation.ts';
 
 export type LocationId = 'town' | 'lobby' | 'staircase' | 'hallway' | 'room407';
 export type Facing = -1 | 1;
@@ -53,9 +54,12 @@ export interface NpcTopicDefinition {
     readonly followUp: string;
     // The recognizer matches a complete question subject, then the NPC's topic
     // and contextual reply determine what that NPC can actually say.
-    readonly recognition?: readonly { readonly kind: 'person' | 'place' | 'object' | 'event'; readonly aliases: readonly string[];
+    readonly recognition?: readonly { readonly entityId: string; readonly kind: 'person' | 'place' | 'object' | 'event'; readonly aliases: readonly string[];
+        readonly identity?: 'named' | 'unknown' | 'questioned';
         readonly directIntents?: readonly 'person-about'[] }[];
     readonly contextualReplies?: Readonly<Record<string, string>>;
+    readonly replyContext?: Readonly<Record<string, { readonly referents: readonly ConversationReferent[];
+        readonly focus?: 'sighting' | 'checkout' | 'room' | 'assignment' }>>;
     readonly establishesIdentity?: boolean;
 }
 export type NpcIdentityKnowledge =
