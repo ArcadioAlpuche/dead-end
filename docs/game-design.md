@@ -1,6 +1,6 @@
 # Dead End — Game Design
 
-Planning baseline: November 15, 2026; updated for the approved M1 and M2 implementations. Later planned systems remain unimplemented. Read with [Chapter 1](chapter-1-bellweather.md), the [implementation plan](chapter-1-implementation-plan.md), existing [architecture](architecture.md), and [contributor instructions](../AGENTS.md).
+Planning baseline: November 15, 2026; updated for the approved M1 and M2 implementations. Later planned systems remain unimplemented. Read with [Chapter 1](chapter-1-bellweather.md), the [implementation plan](chapter-1-implementation-plan.md), the approved [investigation and casebook principles](investigation-design.md), existing [architecture](architecture.md), and [contributor instructions](../AGENTS.md).
 
 ## Status and decision authority
 
