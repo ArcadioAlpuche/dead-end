@@ -1,5 +1,6 @@
-import type { LocationDefinition, NpcIdentityKnowledge, SavedGame, WorldDefinition } from './model.ts';
+import type { KaneFactId, LocationDefinition, NpcContactState, NpcIdentityKnowledge, SavedGame, WorldDefinition } from './model.ts';
 import { parseCaseStates } from './cases.ts';
+import { KANE_FACT_IDS } from './npcContact.ts';
 import { canStand } from './spatial.ts';
 
 export function validateWorld(world: WorldDefinition): void {
@@ -50,6 +51,11 @@ export function validateWorld(world: WorldDefinition): void {
         npcIds.add(conversation.npcId);
         if (!conversation.name.trim() || !conversation.unknownLabel?.trim()
             || !Number.isInteger(conversation.patience) || conversation.patience < 1) throw new Error(`Invalid NPC profile: ${conversation.npcId}`);
+        if (conversation.priorKaneKnowledge && (!Array.isArray(conversation.priorKaneKnowledge)
+            || new Set(conversation.priorKaneKnowledge).size !== conversation.priorKaneKnowledge.length
+            || conversation.priorKaneKnowledge.some(fact => !KANE_FACT_IDS.includes(fact)))) throw new Error(`Invalid prior knowledge: ${conversation.npcId}`);
+        if (conversation.returningGreeting !== undefined && !conversation.returningGreeting.trim()
+            || conversation.disclosureReply !== undefined && !conversation.disclosureReply.trim()) throw new Error(`Invalid NPC reply: ${conversation.npcId}`);
         for (const [topicId, topic] of Object.entries(conversation.topics)) {
             if (topic.id !== topicId || !topic.line.text.trim() || !topic.followUp.trim()) throw new Error(`Invalid NPC topic: ${topicId}`);
             if (topic.establishesIdentity && (topicId !== 'introduction' || topic.line.speaker !== conversation.name)) {
@@ -64,10 +70,10 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
     if (!value || typeof value !== 'object') return null;
     const data = value as Partial<Omit<SavedGame, 'version' | 'contentVersion'>>
         & { version?: unknown; contentVersion?: unknown };
-    if ((data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4 && data.version !== 5)
+    if ((data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4 && data.version !== 5 && data.version !== 6)
         || (data.contentVersion !== 'bellweather-1' && data.contentVersion !== 'bellweather-2' && data.contentVersion !== 'bellweather-3')
-        || (data.version === 5 && data.contentVersion !== 'bellweather-3')
-        || (data.contentVersion !== 'bellweather-1' && data.version !== 4 && data.version !== 5)
+        || ((data.version === 5 || data.version === 6) && data.contentVersion !== 'bellweather-3')
+        || (data.contentVersion !== 'bellweather-1' && data.version !== 4 && data.version !== 5 && data.version !== 6)
         || !data.player || !Array.isArray(data.discoveries)) return null;
     const player = data.player;
     if (!Object.prototype.hasOwnProperty.call(world.locations, player.locationId) || (player.facing !== -1 && player.facing !== 1)) return null;
@@ -108,7 +114,7 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
     const memoryKeys = new Set<string>();
     for (const event of memories) {
         if (!event || typeof event !== 'object' || !['accused', 'topic', 'statement', 'friction'].includes(event.kind)
-            || (data.version !== 4 && data.version !== 5 && event.kind !== 'accused')
+            || (data.version !== 4 && data.version !== 5 && data.version !== 6 && event.kind !== 'accused')
             || typeof event.npcId !== 'string' || !profiles.has(event.npcId)
             || typeof event.locationId !== 'string' || !Object.prototype.hasOwnProperty.call(world.locations, event.locationId)
             || typeof event.recordedAt !== 'number' || !Number.isFinite(event.recordedAt) || event.recordedAt < 0) return null;
@@ -123,10 +129,10 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
         memoryKeys.add(key);
     }
     // V1/v2 never contained case acceptance. Do not infer it from existing discoveries or memory.
-    const cases = data.version === 3 || data.version === 4 || data.version === 5 ? parseCaseStates(data.cases, world.cases) : {};
+    const cases = data.version === 3 || data.version === 4 || data.version === 5 || data.version === 6 ? parseCaseStates(data.cases, world.cases) : {};
     if (!cases) return null;
     const npcIdentities: Record<string, NpcIdentityKnowledge> = {};
-    if (data.version === 5) {
+    if (data.version === 5 || data.version === 6) {
         if (!data.npcIdentities || typeof data.npcIdentities !== 'object' || Array.isArray(data.npcIdentities)) return null;
         for (const [id, raw] of Object.entries(data.npcIdentities)) {
             if (!profiles.has(id) || !raw || typeof raw !== 'object') return null;
@@ -146,5 +152,23 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
             ...memories.filter(item => item.npcId === 'receptionist')];
         if (traces.length) npcIdentities.receptionist = { status: 'established', recordedAt: Math.min(...traces.map(item => item.recordedAt)) };
     }
-    return { version: 5, cases, contentVersion: 'bellweather-3', player: { locationId: safePlayer.locationId, x: safePlayer.x, y: safePlayer.y, facing: safePlayer.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ ...event })), npcIdentities };
+    // No older schema records meetings or Kane's disclosures reliably. Never infer either
+    // from case state, identity discovery, testimony or another NPC's memory.
+    const npcContacts: Record<string, NpcContactState> = {};
+    if (data.version === 6) {
+        if (!data.npcContacts || typeof data.npcContacts !== 'object' || Array.isArray(data.npcContacts)) return null;
+        for (const [npcId, raw] of Object.entries(data.npcContacts)) {
+            if (!profiles.has(npcId) || !raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+            const contact = raw as NpcContactState;
+            if (!Number.isFinite(contact.encounteredAt) || contact.encounteredAt < 0
+                || !contact.disclosures || typeof contact.disclosures !== 'object' || Array.isArray(contact.disclosures)) return null;
+            const disclosures: Partial<Record<KaneFactId, number>> = {};
+            for (const [factId, at] of Object.entries(contact.disclosures)) {
+                if (!KANE_FACT_IDS.includes(factId as KaneFactId) || !Number.isFinite(at) || at < contact.encounteredAt) return null;
+                disclosures[factId as KaneFactId] = at;
+            }
+            npcContacts[npcId] = { encounteredAt: contact.encounteredAt, disclosures };
+        }
+    }
+    return { version: 6, cases, contentVersion: 'bellweather-3', player: { locationId: safePlayer.locationId, x: safePlayer.x, y: safePlayer.y, facing: safePlayer.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ ...event })), npcIdentities, npcContacts };
 }

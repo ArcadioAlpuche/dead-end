@@ -1,5 +1,6 @@
 import type { ActionRequest } from './actions.ts';
 import type { ConversationTopic } from './conversation.ts';
+import type { KaneFactId } from './model.ts';
 import { classifyMessage } from './conversation.ts';
 
 export interface DisclosureRoute {
@@ -9,10 +10,19 @@ export interface DisclosureRoute {
 }
 export type ConversationRoute =
     | { readonly kind: 'ordinary'; readonly topic: ConversationTopic; readonly intent?: 'where-seen-person-went' | 'room-belongings' }
+    | { readonly kind: 'player-disclosure'; readonly facts: readonly KaneFactId[] }
     | { readonly kind: 'action'; readonly request: ActionRequest }
     | { readonly kind: 'clarify'; readonly message: string };
 
 const normalize = (text: string) => text.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.!?]$/, '');
+// Explicit, complete self-disclosures only. No partial match can smuggle another fact.
+const playerDisclosures = new Map<string, readonly KaneFactId[]>([
+    ['thomas kane', ['name']], ['my name is thomas kane', ['name']], ["i'm thomas kane", ['name']],
+    ['i am a private investigator', ['occupation']], ["i'm a private investigator", ['occupation']],
+    ['i used to be a cop', ['former-police']], ['i was a cop', ['former-police']],
+    ['i used to be a police officer', ['former-police']], ['i was a police officer', ['former-police']],
+    ['thomas kane. private investigator', ['name', 'occupation']],
+]);
 // Whole utterances in a small authored grammar. No substring match can authorize
 // an appended address, name, disclosure, request or second clause.
 const ordinary = new Map<string, ConversationTopic>();
@@ -58,6 +68,8 @@ export function routeConversationInput(text: string, recipientId: string, disclo
         }
         return { kind: 'action', request: { kind: 'disclose-information', informationId: matches[0].informationId, recipientId } };
     }
+    const playerFacts = playerDisclosures.get(normalized);
+    if (playerFacts) return { kind: 'player-disclosure', facts: playerFacts };
     // Preserve the original narrow accusation memory demonstration (not a case resolution).
     if (classifyMessage(text) === 'accusation') {
         return { kind: 'ordinary', topic: 'accusation' };
@@ -71,6 +83,6 @@ export function routeConversationInput(text: string, recipientId: string, disclo
     // Fail closed, including addresses, paraphrases, mixed messages and unsupported actions.
     // No claim of general natural-language understanding; no raw text reaches NPC context.
     return { kind: 'clarify', message: recipientId === 'receptionist'
-        ? 'Not sent. The clerk rests a hand on the register. “Ask me about Room 407 or what I saw last night, Mr. Kane.”'
+        ? 'Not sent. The clerk rests a hand on the register. “Ask me about Room 407 or what I saw last night.”'
         : 'Not sent. Try a direct question about a topic this person can discuss. Use an explicit action to share information.' };
 }

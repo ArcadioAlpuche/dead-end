@@ -122,8 +122,8 @@ for (const version of [1, 2]) test(`v${version} migration preserves existing sta
     const loaded = loadLocal(storage, hotel);
     assert.equal(loaded.writable, true);
     assert.equal(storage.data.get(SAVE_KEY), JSON.stringify(old), 'Reading does not write');
-    assert.deepEqual(loaded.saved, { ...old, version: 5, contentVersion: 'bellweather-3', npcMemories: old.npcMemories ?? [], cases: {},
-        npcIdentities: { receptionist: { status: 'established', recordedAt: version === 2 ? 24680 : 67890 } } });
+    assert.deepEqual(loaded.saved, { ...old, version: 6, contentVersion: 'bellweather-3', npcMemories: old.npcMemories ?? [], cases: {},
+        npcIdentities: { receptionist: { status: 'established', recordedAt: version === 2 ? 24680 : 67890 } }, npcContacts: {} });
     const session = new GameSession(hotel, loaded.saved);
     offer(session); accept(session, 'case-001');
     assert.ok(saveLocal(storage, session));

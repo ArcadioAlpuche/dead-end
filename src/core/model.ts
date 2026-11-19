@@ -19,11 +19,20 @@ export interface RecordDefinition {
 export interface Discovery { readonly id: string; readonly recordedAt: number }
 export interface KnowledgeRecord extends RecordDefinition { readonly recordedAt: number }
 export interface DialogueLine { readonly speaker: string; readonly text: string; readonly recordId?: string }
+export type KaneFactId = 'name' | 'occupation' | 'former-police';
+export interface NpcContactState {
+    readonly encounteredAt: number;
+    // A disclosure records what Kane said, not independent verification of his claim.
+    readonly disclosures: Readonly<Partial<Record<KaneFactId, number>>>;
+}
 export interface ConversationDefinition {
     readonly npcId: string;
     readonly name: string;
     readonly unknownLabel: string;
     readonly greeting: string;
+    readonly returningGreeting?: string;
+    readonly disclosureReply?: string;
+    readonly priorKaneKnowledge?: readonly KaneFactId[];
     readonly rememberedAccusationGreeting: string;
     readonly personality: string;
     readonly patience: number;
@@ -107,12 +116,13 @@ export interface WorldDefinition {
     readonly conversations: Readonly<Record<string, ConversationDefinition>>;
 }
 export interface SavedGame {
-    readonly version: 5;
+    readonly version: 6;
     readonly contentVersion: 'bellweather-3';
     readonly player: Player;
     readonly discoveries: readonly Discovery[];
     readonly npcMemories: readonly NpcMemoryEvent[];
     readonly npcIdentities: Readonly<Record<string, NpcIdentityKnowledge>>;
+    readonly npcContacts: Readonly<Record<string, NpcContactState>>;
     readonly cases: Readonly<Record<string, CaseState>>;
 }
 export interface Conversation {

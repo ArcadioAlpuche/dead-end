@@ -81,7 +81,7 @@ test('v4 migration preserves progress, infers only durable prior Arthur encounte
         discoveries: [{ id: 'receptionist-account', recordedAt: 50 }, { id: 'folded-note', recordedAt: 60 }],
         npcMemories: [{ kind: 'accused', npcId: 'receptionist', locationId: 'lobby', recordedAt: 40 }] };
     const migrated = parseSave(old, hotel);
-    assert.equal(migrated.version, 5);
+    assert.equal(migrated.version, 6);
     assert.deepEqual(migrated.discoveries, old.discoveries);
     assert.deepEqual(migrated.npcMemories, old.npcMemories);
     assert.deepEqual(migrated.npcIdentities, { receptionist: { status: 'established', recordedAt: 40 } });

@@ -18,7 +18,9 @@ Keep ordinary conversation history distinct from durable memory. Persist signifi
 
 An NPC's canonical ID and authored identity belong to the game definition. The name shown to Kane depends on separately saved identity knowledge, not on trust, patience, or a renamed NPC ID. Before a credible introduction, use a descriptive label based on what Kane can observe. A claimed or suspected name can be retained without presenting it as established; a resemblance or unsupported player guess does not confirm identity. A credible, authored self-introduction may establish the displayed name. Preserve earlier conversation speaker labels as they were shown at the time, so learning a name does not rewrite history.
 
-The first implemented slice applies this to the Bellweather receptionist: **Hotel Clerk** becomes **Arthur Finch** after his authored introduction. Schema v5 saves that knowledge separately from NPC memory. Older saves with a durable record of speaking to him retain the name the previous UI already showed; an old save with no such trace begins with the descriptive label. No Johnny or Daniel identity content is implemented yet.
+The first implemented slice applies this to the Bellweather receptionist: **Hotel Clerk** becomes **Arthur Finch** after his authored introduction. Schema v6 saves that knowledge separately from NPC memory and from Kane's disclosures to the NPC. Older saves with a durable record of speaking to him retain the name the previous UI already showed; an old save with no such trace begins with the descriptive label. Older saves do not infer a first encounter or Kane disclosure from ambiguous history. No Johnny or Daniel identity content is implemented yet.
+
+The initial universal contact foundation records the first encounter once per stable NPC ID. The player may explicitly tell an NPC Kane's name, private-investigator occupation, or former-police background separately; those events preserve what Kane claimed without treating the statement as independent verification. Evelyn's authored prior relationship establishes her knowledge of his name and occupation without pretending that Kane disclosed them during play. Arthur and Thomas Bell begin without such knowledge. This does not define Kane's personality or add a trust score. Exact self-disclosure phrases are a bounded offline bridge; broader intent and context handling remain future work.
 
 ## Conversational response and patience
 
@@ -46,6 +48,10 @@ Potentially consequential disclosures and decisions must pass the existing pre-d
 Authored dialogue and deterministic safeguards remain useful for canonical information, safe fallback, and reliable case progression. The long-term design may use an optional, replaceable AI provider to improve natural-language understanding and expression within each NPC's permitted context. A live AI connection must never be necessary to complete the game or obtain essential case information. The offline/authored path must retain free-form input and provide understandable clarification when it cannot interpret a message.
 
 The current M3 implementation accepts typed text but recognizes a bounded authored grammar with limited contextual follow-ups. It blocks unrecognized or potentially consequential messages before NPC dispatch. That limitation is an implementation status, not a revision of the free-form design goal.
+
+### Phase 2 intent-recognition test case
+
+At the Bellweather front desk, the player asked Arthur: “What do you know about Daniel Mercer?” The current boundary returned its generic “Not sent” Room 407/last-night clarification. This is an existing bounded-grammar limitation, not a Phase 1 encounter or disclosure regression. Phase 2 should recognize the person's name and the investigative intent, then provide an appropriate Arthur response or useful in-character clarification within his authored knowledge. It must not route the question to Evelyn's assignment answer, invent Arthur testimony, reveal unsupported case facts, or treat the question as a disclosure.
 
 ## Open technical decisions
 

@@ -57,7 +57,8 @@ test('loading and restarting change autosave without modifying manual slots', ()
 });
 
 test('legacy v5 save imports once and leaves original bytes intact', () => {
-    const f = fixture(); const original = JSON.stringify(fresh()); f.data.set(SAVE_KEY, original);
+    const f = fixture(); const { npcContacts, ...current } = fresh();
+    const original = JSON.stringify({ ...current, version: 5 }); f.data.set(SAVE_KEY, original);
     const store = f.repository();
     assert.equal(store.importLegacy(), '');
     assert.equal(store.importLegacy(), '');
@@ -98,7 +99,7 @@ test('legacy v1 migrates through existing parser without losing position or disc
     const store = f.repository();
     assert.equal(store.importLegacy(), '');
     const migrated = store.load('legacy-bellweather', 'autosave');
-    assert.equal(migrated.version, 5);
+    assert.equal(migrated.version, 6);
     assert.deepEqual(migrated.player, old.player);
     assert.deepEqual(migrated.discoveries, old.discoveries);
     assert.equal(f.data.get(SAVE_KEY), JSON.stringify(old));

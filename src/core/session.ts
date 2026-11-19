@@ -1,4 +1,4 @@
-import type { CaseState, Discovery, Entry, Interaction, NpcIdentityKnowledge, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
+import type { CaseState, Discovery, Entry, Interaction, KaneFactId, NpcContactState, NpcIdentityKnowledge, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
 import { casebookEntries, copyCaseStates } from './cases.ts';
 import { MAX_HISTORY_LINES, MAX_MESSAGE_LENGTH } from './conversation.ts';
 import { ActionConfirmation } from './actions.ts';
@@ -9,6 +9,8 @@ import { routeConversationInput } from './conversationBoundary.ts';
 import type { ConversationResponder } from './conversation.ts';
 import { frictionCount, lastDiscussedTopic, rememberOnce, setFriction } from './npcMemory.ts';
 import { establishNpcIdentity, npcDisplayName } from './npcIdentity.ts';
+import { kaneFactKnowledge, recordPlayerDisclosure, registerEncounter } from './npcContact.ts';
+import type { KaneFactKnowledge } from './npcContact.ts';
 import { canStand, distance, INTERACTION_RADIUS } from './spatial.ts';
 
 export class GameSession {
@@ -19,6 +21,7 @@ export class GameSession {
     private view: ViewState;
     private npcMemories: readonly NpcMemoryEvent[];
     private npcIdentities: Readonly<Record<string, NpcIdentityKnowledge>>;
+    private npcContacts: Readonly<Record<string, NpcContactState>>;
     private requestGeneration = 0;
     private activeConversationTopic: string | null = null;
     private paused = false;
@@ -33,6 +36,7 @@ export class GameSession {
         this.responder = responder ?? { async respond() { throw new Error('No conversation responder configured'); } };
         this.npcMemories = saved?.npcMemories ?? [];
         this.npcIdentities = saved?.npcIdentities ?? {};
+        this.npcContacts = saved?.npcContacts ?? {};
         this.player = saved?.player ?? { locationId: 'lobby', ...world.locations.lobby.entries.arrival };
         this.discoveries = saved?.discoveries ?? [];
         this.view = {
@@ -51,6 +55,10 @@ export class GameSession {
         return () => { this.listeners.delete(listener); };
     };
     getPlayer(): Player { return this.player; }
+    getNpcKaneKnowledge(npcId: string, factId: KaneFactId): KaneFactKnowledge | null {
+        const profile = Object.values(this.world.conversations).find(item => item.npcId === npcId);
+        return profile ? kaneFactKnowledge(profile, this.npcContacts[npcId], factId) : null;
+    }
     isBlocked(): boolean { return this.paused || this.view.pendingAction !== null || this.view.notebookOpen || this.view.conversation !== null; }
     setPaused(paused: boolean): void {
         if (this.paused === paused) return;
@@ -58,7 +66,7 @@ export class GameSession {
         this.publish({});
     }
     getSave(): SavedGame {
-        return { version: 5, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-3', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })), npcIdentities: { ...this.npcIdentities } };
+        return { version: 6, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-3', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })), npcIdentities: { ...this.npcIdentities }, npcContacts: Object.fromEntries(Object.entries(this.npcContacts).map(([id, contact]) => [id, { encounteredAt: contact.encounteredAt, disclosures: { ...contact.disclosures } }])) };
     }
     private publish(patch: Partial<ViewState>): void {
         this.view = { ...this.view, ...patch };
@@ -110,11 +118,13 @@ export class GameSession {
             const name = npcDisplayName(definition, this.npcIdentities[definition.npcId]);
             this.activeConversationTopic = null;
             const remembers = this.npcMemories.some(event => event.npcId === definition.npcId && event.kind === 'accused');
+            const returning = this.npcContacts[definition.npcId] !== undefined;
+            this.npcContacts = registerEncounter(this.npcContacts, definition.npcId, Date.now());
             this.publish({ conversation: {
                 id: target.conversationId, name, pending: false, error: '',
                 history: [{ speaker: name, text: remembers
                     ? definition.rememberedAccusationGreeting
-                    : definition.greeting }],
+                    : returning ? definition.returningGreeting ?? definition.greeting : definition.greeting }],
             } });
         }
         return true;
@@ -133,6 +143,13 @@ export class GameSession {
         if (route.kind === 'action') {
             this.proposeAction(route.request);
             return false; // A private proposal is never an NPC message.
+        }
+        if (route.kind === 'player-disclosure') {
+            for (const fact of route.facts) this.npcContacts = recordPlayerDisclosure(this.npcContacts, definition.npcId, fact, Date.now());
+            const history = [...conversation.history, { speaker: 'Detective', text },
+                { speaker: conversation.name, text: definition.disclosureReply ?? 'They acknowledge the introduction.' }].slice(-MAX_HISTORY_LINES);
+            this.publish({ conversation: { ...conversation, history, error: '' } });
+            return true;
         }
         const topic = route.topic;
         const authored = definition.topics[topic === 'follow-up'

@@ -178,7 +178,7 @@ test('save migration preserves v3 state and rejects malformed v4 memory without 
         discoveries: [{ id: 'folded-note', recordedAt: 72 }],
         npcMemories: [{ kind: 'accused', npcId: 'receptionist', locationId: 'lobby', recordedAt: 31 }] };
     const migrated = parseSave(old, hotel);
-    assert.equal(migrated.version, 5);
+    assert.equal(migrated.version, 6);
     assert.deepEqual(migrated.discoveries, old.discoveries);
     assert.deepEqual(migrated.npcMemories, old.npcMemories);
     assert.equal(parseSave({ ...current, npcMemories: [{ kind: 'topic', npcId: 'receptionist', topicId: 'secret', locationId: 'lobby', recordedAt: 1 }] }, hotel), null);
