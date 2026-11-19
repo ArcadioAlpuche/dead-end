@@ -56,12 +56,28 @@ export function validateWorld(world: WorldDefinition): void {
             || conversation.priorKaneKnowledge.some(fact => !KANE_FACT_IDS.includes(fact)))) throw new Error(`Invalid prior knowledge: ${conversation.npcId}`);
         if (conversation.returningGreeting !== undefined && !conversation.returningGreeting.trim()
             || conversation.disclosureReply !== undefined && !conversation.disclosureReply.trim()) throw new Error(`Invalid NPC reply: ${conversation.npcId}`);
+        const subjectAliases = new Set<string>();
         for (const [topicId, topic] of Object.entries(conversation.topics)) {
             if (topic.id !== topicId || !topic.line.text.trim() || !topic.followUp.trim()) throw new Error(`Invalid NPC topic: ${topicId}`);
             if (topic.establishesIdentity && (topicId !== 'introduction' || topic.line.speaker !== conversation.name)) {
                 throw new Error(`Invalid identity introduction: ${conversation.npcId}`);
             }
             if (topic.line.recordId && !world.records[topic.line.recordId]) throw new Error(`Missing dialogue record: ${topic.line.recordId}`);
+            if (topic.recognition) {
+                if (!Array.isArray(topic.recognition)) throw new Error(`Invalid topic recognition: ${topicId}`);
+                for (const group of topic.recognition) {
+                    if (!group || !['person', 'place', 'object', 'event'].includes(group.kind)
+                        || !Array.isArray(group.aliases) || !group.aliases.length) throw new Error(`Invalid topic recognition: ${topicId}`);
+                    if (group.directIntents && (group.kind !== 'person' || !Array.isArray(group.directIntents)
+                        || group.directIntents.some((intent: unknown) => intent !== 'person-about'))) throw new Error(`Invalid direct intent: ${topicId}`);
+                    for (const alias of group.aliases) {
+                        if (typeof alias !== 'string' || !alias.trim() || alias.length > 100) throw new Error(`Invalid topic alias: ${topicId}`);
+                        const key = `${group.kind}:${alias.trim().toLowerCase().replace(/\s+/g, ' ')}`;
+                        if (subjectAliases.has(key)) throw new Error(`Ambiguous topic alias: ${key}`);
+                        subjectAliases.add(key);
+                    }
+                }
+            }
         }
     }
 }

@@ -135,7 +135,7 @@ export class GameSession {
         if (!conversation || conversation.pending || this.view.pendingAction || !text || text.length > MAX_MESSAGE_LENGTH) return false;
         const definition = this.world.conversations[conversation.id];
         // This boundary precedes transcript, memory, authored testimony and responder dispatch.
-        const route = routeConversationInput(text, definition.npcId, [], this.activeConversationTopic);
+        const route = routeConversationInput(text, definition.npcId, [], this.activeConversationTopic, definition);
         if (route.kind === 'clarify') {
             this.publish({ conversation: { ...conversation, error: route.message } });
             return false;
@@ -155,7 +155,7 @@ export class GameSession {
         const authored = definition.topics[topic === 'follow-up'
             ? route.intent ? this.activeConversationTopic ?? '' : this.activeConversationTopic ?? lastDiscussedTopic(this.npcMemories, definition.npcId) ?? ''
             : topic];
-        if (['account', 'room', 'assignment', 'introduction', 'follow-up'].includes(topic) && !authored) {
+        if (['account', 'room', 'register', 'assignment', 'introduction', 'follow-up'].includes(topic) && !authored) {
             this.publish({ conversation: { ...conversation, error: 'Not sent. Ask about a specific topic first.' } });
             return false;
         }

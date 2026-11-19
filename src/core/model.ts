@@ -51,6 +51,10 @@ export interface NpcTopicDefinition {
     readonly stance: 'observed' | 'procedure' | 'claim' | 'belief' | 'uncertain' | 'evasion' | 'deception';
     readonly line: DialogueLine;
     readonly followUp: string;
+    // The recognizer matches a complete question subject, then the NPC's topic
+    // and contextual reply determine what that NPC can actually say.
+    readonly recognition?: readonly { readonly kind: 'person' | 'place' | 'object' | 'event'; readonly aliases: readonly string[];
+        readonly directIntents?: readonly 'person-about'[] }[];
     readonly contextualReplies?: Readonly<Record<string, string>>;
     readonly establishesIdentity?: boolean;
 }

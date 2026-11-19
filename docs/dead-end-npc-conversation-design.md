@@ -47,11 +47,19 @@ Potentially consequential disclosures and decisions must pass the existing pre-d
 
 Authored dialogue and deterministic safeguards remain useful for canonical information, safe fallback, and reliable case progression. The long-term design may use an optional, replaceable AI provider to improve natural-language understanding and expression within each NPC's permitted context. A live AI connection must never be necessary to complete the game or obtain essential case information. The offline/authored path must retain free-form input and provide understandable clarification when it cannot interpret a message.
 
-The current M3 implementation accepts typed text but recognizes a bounded authored grammar with limited contextual follow-ups. It blocks unrecognized or potentially consequential messages before NPC dispatch. That limitation is an implementation status, not a revision of the free-form design goal.
+The current implementation accepts typed text through a bounded authored grammar, Phase 2A profile-driven question templates, and limited contextual follow-ups. It blocks unrecognized or potentially consequential messages before NPC dispatch. Subject aliases and a few spelling corrections improve offline recognition without claiming broad natural-language comprehension. That limitation is an implementation status, not a revision of the free-form design goal.
 
-### Phase 2 intent-recognition test case
+### Phase 2A intent-recognition regression case
 
-At the Bellweather front desk, the player asked Arthur: “What do you know about Daniel Mercer?” The current boundary returned its generic “Not sent” Room 407/last-night clarification. This is an existing bounded-grammar limitation, not a Phase 1 encounter or disclosure regression. Phase 2 should recognize the person's name and the investigative intent, then provide an appropriate Arthur response or useful in-character clarification within his authored knowledge. It must not route the question to Evelyn's assignment answer, invent Arthur testimony, reveal unsupported case facts, or treat the question as a disclosure.
+At the Bellweather front desk, the player asked Arthur: “What do you know about Daniel Mercer?” Before Phase 2A, the boundary returned its generic “Not sent” Room 407/last-night clarification. The Phase 2A recognizer now routes it to Arthur's limited authored response: he cannot identify the person he saw as Daniel. It does not route to Evelyn's assignment claim, grant Arthur testimony, reveal unsupported case facts, or treat the question as a disclosure. This exact wording remains in the automated regression table.
+
+### Future conversation work (not implemented in Phase 2A)
+
+**Phase 2D — Natural fallback behavior.** Unrecognized input still produces a private “Not sent” clarification, which can break immersion. A later pass should distinguish harmless unsupported questions from ambiguous or potentially consequential statements. Harmless questions should receive appropriate in-character responses when they can be dispatched safely; uncertain disclosures and actions must continue through the pre-dispatch safety boundary.
+
+**Phase 3 — Character-aware responses.** Accepted introductions and Kane disclosures can currently receive a generic acknowledgment, such as “The clerk nods and returns his attention to you.” Future responses should follow each NPC's authored personality, knowledge, circumstances, and relationship with Kane. Randomized generic acknowledgments would not satisfy this requirement. Response text must still have no authority to create facts or state changes.
+
+**Future UI milestone — Conversation history.** The current history view works, but its control needs clearer discoverability. The transcript should become more compact, distinguish speakers more clearly, and improve readability. This is a separate presentation milestone; Phase 2A does not change the interface or persist transcripts.
 
 ## Open technical decisions
 
