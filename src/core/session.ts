@@ -1,4 +1,4 @@
-import type { CaseState, Discovery, Entry, Interaction, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
+import type { CaseState, Discovery, Entry, Interaction, NpcIdentityKnowledge, NpcMemoryEvent, Player, SavedGame, ViewState, WorldDefinition } from './model.ts';
 import { casebookEntries, copyCaseStates } from './cases.ts';
 import { MAX_HISTORY_LINES, MAX_MESSAGE_LENGTH } from './conversation.ts';
 import { ActionConfirmation } from './actions.ts';
@@ -8,6 +8,7 @@ import type { CaseActionContext } from './caseActions.ts';
 import { routeConversationInput } from './conversationBoundary.ts';
 import type { ConversationResponder } from './conversation.ts';
 import { frictionCount, lastDiscussedTopic, rememberOnce, setFriction } from './npcMemory.ts';
+import { establishNpcIdentity, npcDisplayName } from './npcIdentity.ts';
 import { canStand, distance, INTERACTION_RADIUS } from './spatial.ts';
 
 export class GameSession {
@@ -17,6 +18,7 @@ export class GameSession {
     private discoveries: readonly Discovery[];
     private view: ViewState;
     private npcMemories: readonly NpcMemoryEvent[];
+    private npcIdentities: Readonly<Record<string, NpcIdentityKnowledge>>;
     private requestGeneration = 0;
     private activeConversationTopic: string | null = null;
     private readonly actions: ActionConfirmation<CaseActionContext>;
@@ -29,6 +31,7 @@ export class GameSession {
         this.cases = copyCaseStates(saved?.cases ?? {});
         this.responder = responder ?? { async respond() { throw new Error('No conversation responder configured'); } };
         this.npcMemories = saved?.npcMemories ?? [];
+        this.npcIdentities = saved?.npcIdentities ?? {};
         this.player = saved?.player ?? { locationId: 'lobby', ...world.locations.lobby.entries.arrival };
         this.discoveries = saved?.discoveries ?? [];
         this.view = {
@@ -49,7 +52,7 @@ export class GameSession {
     getPlayer(): Player { return this.player; }
     isBlocked(): boolean { return this.view.pendingAction !== null || this.view.notebookOpen || this.view.conversation !== null; }
     getSave(): SavedGame {
-        return { version: 4, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-3', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })) };
+        return { version: 5, cases: copyCaseStates(this.cases), contentVersion: 'bellweather-3', player: { ...this.player }, discoveries: this.discoveries.map(d => ({ ...d })), npcMemories: this.npcMemories.map(event => ({ ...event })), npcIdentities: { ...this.npcIdentities } };
     }
     private publish(patch: Partial<ViewState>): void {
         this.view = { ...this.view, ...patch };
@@ -98,11 +101,12 @@ export class GameSession {
             this.publish({ message: this.world.records[target.recordId].text });
         } else {
             const definition = this.world.conversations[target.conversationId];
+            const name = npcDisplayName(definition, this.npcIdentities[definition.npcId]);
             this.activeConversationTopic = null;
             const remembers = this.npcMemories.some(event => event.npcId === definition.npcId && event.kind === 'accused');
             this.publish({ conversation: {
-                id: target.conversationId, name: definition.name, pending: false, error: '',
-                history: [{ speaker: definition.name, text: remembers
+                id: target.conversationId, name, pending: false, error: '',
+                history: [{ speaker: name, text: remembers
                     ? definition.rememberedAccusationGreeting
                     : definition.greeting }],
             } });
@@ -128,13 +132,13 @@ export class GameSession {
         const authored = definition.topics[topic === 'follow-up'
             ? route.intent ? this.activeConversationTopic ?? '' : this.activeConversationTopic ?? lastDiscussedTopic(this.npcMemories, definition.npcId) ?? ''
             : topic];
-        if (['account', 'room', 'assignment', 'follow-up'].includes(topic) && !authored) {
+        if (['account', 'room', 'assignment', 'introduction', 'follow-up'].includes(topic) && !authored) {
             this.publish({ conversation: { ...conversation, error: 'Not sent. Ask about a specific topic first.' } });
             return false;
         }
         const contextualReply = route.intent ? authored?.contextualReplies?.[route.intent] : null;
         if (route.intent && !contextualReply) {
-            this.publish({ conversation: { ...conversation, error: `Not sent. ${definition.name} has no established answer to that follow-up.` } });
+            this.publish({ conversation: { ...conversation, error: `Not sent. ${conversation.name} has no established answer to that follow-up.` } });
             return false;
         }
         // The player's explicit statement is remembered even if the response fails or they leave.
@@ -151,7 +155,8 @@ export class GameSession {
         const generation = ++this.requestGeneration;
         this.publish({ conversation: { ...conversation, history, pending: true, error: '' } });
         try {
-            const scripted = contextualReply ?? (topic === 'irrelevant' ? irritation > definition.patience + 1 ? definition.silent
+            const scripted = contextualReply ?? (topic === 'introduction' && authored?.establishesIdentity ? authored.line.text
+                : topic === 'irrelevant' ? irritation > definition.patience + 1 ? definition.silent
                 : irritation > definition.patience ? definition.disengaged
                 : irritation === definition.patience ? definition.warning : definition.irrelevant
                 : topic === 'rapport' ? definition.rapport
@@ -165,17 +170,22 @@ export class GameSession {
             if (generation !== this.requestGeneration || !this.view.conversation) return true;
             if (typeof response !== 'string' || !response.trim() || response.length > 4000) throw new Error('Invalid response');
             // Only core-selected authored lines can grant knowledge. Adapter text is never evidence.
-            const line = route.intent ? null : topic === 'follow-up' && authored ? { speaker: definition.name, text: authored.followUp }
-                : authored?.line;
-            const lines = [...history, { speaker: definition.name, text: response }, ...(line ? [line] : [])].slice(-MAX_HISTORY_LINES);
-            this.publish({ conversation: { ...conversation, history: lines, pending: false, error: '' } });
+            if (topic === 'introduction' && authored?.establishesIdentity) {
+                this.npcIdentities = establishNpcIdentity(this.npcIdentities, definition.npcId, Date.now());
+            }
+            const name = npcDisplayName(definition, this.npcIdentities[definition.npcId]);
+            const isAuthoredStatement = !!authored && topic !== 'follow-up' && topic !== 'introduction' && !route.intent;
+            const line = route.intent || topic === 'introduction' ? null : topic === 'follow-up' && authored ? { speaker: name, text: authored.followUp }
+                : authored?.line && { ...authored.line, speaker: name };
+            const lines = [...history, { speaker: name, text: response }, ...(line ? [line] : [])].slice(-MAX_HISTORY_LINES);
+            this.publish({ conversation: { ...conversation, name, history: lines, pending: false, error: '' } });
             if (authored && topic !== 'follow-up') this.activeConversationTopic = authored.id;
             else if (!authored) this.activeConversationTopic = null;
             if (authored && topic !== 'follow-up') {
                 this.npcMemories = rememberOnce(this.npcMemories, { kind: 'topic', npcId: definition.npcId,
                     topicId: authored.id, locationId: this.player.locationId, recordedAt: Date.now() });
             }
-            if (authored && line === authored.line) {
+            if (isAuthoredStatement) {
                 this.npcMemories = rememberOnce(this.npcMemories, { kind: 'statement', npcId: definition.npcId,
                     statementId: `${definition.npcId}:${authored.id}`, locationId: this.player.locationId, recordedAt: Date.now() });
             }
@@ -230,6 +240,7 @@ export class GameSession {
         const next = result.state.saved;
         this.cases = next.cases; this.discoveries = next.discoveries;
         this.npcMemories = next.npcMemories; this.player = next.player;
+        this.npcIdentities = next.npcIdentities;
         this.publish({ pendingAction: null, actionError: '', cases: casebookEntries(this.world.cases, this.cases), caseOfferId: null,
             message: 'Assignment accepted. Recorded in the casebook.' });
         return true;

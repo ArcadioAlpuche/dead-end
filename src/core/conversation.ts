@@ -2,7 +2,7 @@ import type { DialogueLine, NpcMemoryEvent } from './model.ts';
 
 export const MAX_MESSAGE_LENGTH = 2000;
 export const MAX_HISTORY_LINES = 80;
-export type ConversationTopic = 'accusation' | 'account' | 'room' | 'assignment' | 'general' | 'rapport' | 'small-talk' | 'irrelevant' | 'follow-up';
+export type ConversationTopic = 'accusation' | 'account' | 'room' | 'assignment' | 'introduction' | 'general' | 'rapport' | 'small-talk' | 'irrelevant' | 'follow-up';
 
 // Deliberately exact: questions, quotations, negation, and criticism are not accusations.
 export function classifyMessage(text: string): ConversationTopic {

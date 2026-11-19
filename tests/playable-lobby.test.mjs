@@ -82,7 +82,7 @@ test('town, stairs, fourth-floor hallway and Room 407 return through safe named 
 
 test('old lobby saves relocate only newly blocked positions, preserving durable state', () => {
     const baseline = new GameSession(hotel).getSave();
-    const state = { ...baseline, contentVersion: 'bellweather-1',
+    const state = { ...baseline, version: 4, contentVersion: 'bellweather-1',
         discoveries: [{ id: 'folded-note', recordedAt: 123 }],
         npcMemories: [{ kind: 'accused', npcId: 'receptionist', locationId: 'lobby', recordedAt: 456 }],
         cases: { 'case-001': { status: 'active', history: [{ kind: 'accepted', recordedAt: 789 }] } } };
@@ -103,7 +103,7 @@ test('old lobby saves relocate only newly blocked positions, preserving durable 
 
 test('previous illustrated-lobby saves relocate only feet outside the revised floor', () => {
     const baseline = new GameSession(hotel).getSave();
-    const previous = { ...baseline, contentVersion: 'bellweather-2',
+    const previous = { ...baseline, version: 4, contentVersion: 'bellweather-2',
         player: { locationId: 'lobby', x: 230, y: 550, facing: -1 },
         discoveries: [{ id: 'folded-note', recordedAt: 123 }],
         npcMemories: [{ kind: 'accused', npcId: 'receptionist', locationId: 'lobby', recordedAt: 456 }] };
@@ -120,7 +120,7 @@ test('previous illustrated-lobby saves relocate only feet outside the revised fl
 test('invalid and unsupported saves stay unreadable without overwriting the original slot', () => {
     const baseline = new GameSession(hotel).getSave();
     for (const bad of [
-        { ...baseline, contentVersion: 'bellweather-1', player: { locationId: 'lobby', x: 670, y: 520, facing: 1 } },
+        { ...baseline, version: 4, contentVersion: 'bellweather-1', player: { locationId: 'lobby', x: 670, y: 520, facing: 1 } },
         { ...baseline, player: { locationId: 'lobby', x: 730, y: 575, facing: 1 } },
         { ...baseline, contentVersion: 'bellweather-9' },
     ]) {
@@ -134,7 +134,7 @@ test('invalid and unsupported saves stay unreadable without overwriting the orig
 
 test('a legacy desk position loads safely and autosaves the upgraded lobby without losing progress', () => {
     const baseline = new GameSession(hotel).getSave();
-    const old = { ...baseline, contentVersion: 'bellweather-1',
+    const old = { ...baseline, version: 4, contentVersion: 'bellweather-1',
         player: { locationId: 'lobby', x: 670, y: 575, facing: -1 },
         discoveries: [{ id: 'champagne-glass', recordedAt: 99 }],
         cases: { 'case-001': { status: 'active', history: [{ kind: 'accepted', recordedAt: 88 }] } } };

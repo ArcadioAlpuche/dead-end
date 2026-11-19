@@ -68,6 +68,23 @@ function atDesk(id = 'reception', responder = mockResponder, saved) {
     return session;
 }
 
+test('a follow-up does not become a new statement when its wording matches the authored line', async () => {
+    const profile = hotel.conversations.reception;
+    const world = { ...hotel, conversations: { ...hotel.conversations, reception: { ...profile,
+        topics: { ...profile.topics, room: { ...profile.topics.room, followUp: profile.topics.room.line.text } },
+    } } };
+    const saved = { ...new GameSession(hotel).getSave(), npcMemories: [
+        { kind: 'topic', npcId: 'receptionist', topicId: 'room', locationId: 'lobby', recordedAt: 1 },
+    ] };
+    const session = new GameSession(world, saved, mockResponder);
+    assert.ok(session.moveTo({ x: 730, y: 660, facing: 1 }));
+    assert.ok(session.interact('receptionist'));
+    assert.ok(await session.submitMessage('Are you sure?'));
+    assert.equal(session.getSave().npcMemories.filter(event => event.kind === 'statement').length, 0);
+    assert.ok(await session.submitMessage('What can you tell me about Room 407?'));
+    assert.equal(session.getSave().npcMemories.filter(event => event.kind === 'statement').length, 1);
+});
+
 test('authored NPC statements are isolated and only the receptionist account grants existing testimony', async () => {
     assert.equal(hotel.conversations.client.topics.assignment.stance, 'claim');
     assert.equal(hotel.conversations.porter.topics.account.stance, 'evasion');
@@ -161,7 +178,7 @@ test('save migration preserves v3 state and rejects malformed v4 memory without 
         discoveries: [{ id: 'folded-note', recordedAt: 72 }],
         npcMemories: [{ kind: 'accused', npcId: 'receptionist', locationId: 'lobby', recordedAt: 31 }] };
     const migrated = parseSave(old, hotel);
-    assert.equal(migrated.version, 4);
+    assert.equal(migrated.version, 5);
     assert.deepEqual(migrated.discoveries, old.discoveries);
     assert.deepEqual(migrated.npcMemories, old.npcMemories);
     assert.equal(parseSave({ ...current, npcMemories: [{ kind: 'topic', npcId: 'receptionist', topicId: 'secret', locationId: 'lobby', recordedAt: 1 }] }, hotel), null);

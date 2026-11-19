@@ -22,6 +22,7 @@ export interface DialogueLine { readonly speaker: string; readonly text: string;
 export interface ConversationDefinition {
     readonly npcId: string;
     readonly name: string;
+    readonly unknownLabel: string;
     readonly greeting: string;
     readonly rememberedAccusationGreeting: string;
     readonly personality: string;
@@ -42,7 +43,11 @@ export interface NpcTopicDefinition {
     readonly line: DialogueLine;
     readonly followUp: string;
     readonly contextualReplies?: Readonly<Record<string, string>>;
+    readonly establishesIdentity?: boolean;
 }
+export type NpcIdentityKnowledge =
+    | { readonly status: 'claimed'; readonly claimedName: string; readonly recordedAt: number }
+    | { readonly status: 'established'; readonly recordedAt: number };
 interface MemoryBase {
     readonly kind: 'accused' | 'topic' | 'statement' | 'friction';
     readonly npcId: string;
@@ -102,11 +107,12 @@ export interface WorldDefinition {
     readonly conversations: Readonly<Record<string, ConversationDefinition>>;
 }
 export interface SavedGame {
-    readonly version: 4;
+    readonly version: 5;
     readonly contentVersion: 'bellweather-3';
     readonly player: Player;
     readonly discoveries: readonly Discovery[];
     readonly npcMemories: readonly NpcMemoryEvent[];
+    readonly npcIdentities: Readonly<Record<string, NpcIdentityKnowledge>>;
     readonly cases: Readonly<Record<string, CaseState>>;
 }
 export interface Conversation {

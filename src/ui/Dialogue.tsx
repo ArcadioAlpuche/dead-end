@@ -111,7 +111,7 @@ export function Dialogue({ conversation, locationId }: { conversation: Conversat
                 </div>
                 <div className="dialogue-portrait dialogue-portrait-npc">
                     {npcPortrait && <img src={npcPortrait} alt="" />}
-                    <div className="dialogue-nameplate"><strong>{conversation.name}</strong>{npcRole && <em> — {npcRole}</em>}</div>
+                    <div className="dialogue-nameplate"><strong>{conversation.name}</strong>{npcRole && npcRole.toLowerCase() !== conversation.name.toLowerCase() && <em> — {npcRole}</em>}</div>
                 </div>
             </div>
 

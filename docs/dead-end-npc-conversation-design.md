@@ -14,6 +14,12 @@ Each NPC has a consistent personality and authored boundaries for what they know
 
 Keep ordinary conversation history distinct from durable memory. Persist significant interactions needed for later behavior, including appropriate reactions to prior topics or conduct, without requiring a permanent transcript or numerical relationship score. Memory may influence tone and willingness to engage; it must not give an NPC facts they never learned.
 
+### Progressive identification
+
+An NPC's canonical ID and authored identity belong to the game definition. The name shown to Kane depends on separately saved identity knowledge, not on trust, patience, or a renamed NPC ID. Before a credible introduction, use a descriptive label based on what Kane can observe. A claimed or suspected name can be retained without presenting it as established; a resemblance or unsupported player guess does not confirm identity. A credible, authored self-introduction may establish the displayed name. Preserve earlier conversation speaker labels as they were shown at the time, so learning a name does not rewrite history.
+
+The first implemented slice applies this to the Bellweather receptionist: **Hotel Clerk** becomes **Arthur Finch** after his authored introduction. Schema v5 saves that knowledge separately from NPC memory. Older saves with a durable record of speaking to him retain the name the previous UI already showed; an old save with no such trace begins with the descriptive label. No Johnny or Daniel identity content is implemented yet.
+
 ## Conversational response and patience
 
 Interpret a player's message according to its meaning and current context. Distinguish at least these situations:

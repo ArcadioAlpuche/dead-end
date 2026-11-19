@@ -1,4 +1,4 @@
-import type { LocationDefinition, SavedGame, WorldDefinition } from './model.ts';
+import type { LocationDefinition, NpcIdentityKnowledge, SavedGame, WorldDefinition } from './model.ts';
 import { parseCaseStates } from './cases.ts';
 import { canStand } from './spatial.ts';
 
@@ -48,9 +48,13 @@ export function validateWorld(world: WorldDefinition): void {
     for (const conversation of Object.values(world.conversations)) {
         if (!conversation.npcId || npcIds.has(conversation.npcId)) throw new Error('Missing or duplicate NPC ID');
         npcIds.add(conversation.npcId);
-        if (!conversation.name.trim() || !Number.isInteger(conversation.patience) || conversation.patience < 1) throw new Error(`Invalid NPC profile: ${conversation.npcId}`);
+        if (!conversation.name.trim() || !conversation.unknownLabel?.trim()
+            || !Number.isInteger(conversation.patience) || conversation.patience < 1) throw new Error(`Invalid NPC profile: ${conversation.npcId}`);
         for (const [topicId, topic] of Object.entries(conversation.topics)) {
             if (topic.id !== topicId || !topic.line.text.trim() || !topic.followUp.trim()) throw new Error(`Invalid NPC topic: ${topicId}`);
+            if (topic.establishesIdentity && (topicId !== 'introduction' || topic.line.speaker !== conversation.name)) {
+                throw new Error(`Invalid identity introduction: ${conversation.npcId}`);
+            }
             if (topic.line.recordId && !world.records[topic.line.recordId]) throw new Error(`Missing dialogue record: ${topic.line.recordId}`);
         }
     }
@@ -60,9 +64,10 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
     if (!value || typeof value !== 'object') return null;
     const data = value as Partial<Omit<SavedGame, 'version' | 'contentVersion'>>
         & { version?: unknown; contentVersion?: unknown };
-    if ((data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4)
+    if ((data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4 && data.version !== 5)
         || (data.contentVersion !== 'bellweather-1' && data.contentVersion !== 'bellweather-2' && data.contentVersion !== 'bellweather-3')
-        || (data.contentVersion !== 'bellweather-1' && data.version !== 4)
+        || (data.version === 5 && data.contentVersion !== 'bellweather-3')
+        || (data.contentVersion !== 'bellweather-1' && data.version !== 4 && data.version !== 5)
         || !data.player || !Array.isArray(data.discoveries)) return null;
     const player = data.player;
     if (!Object.prototype.hasOwnProperty.call(world.locations, player.locationId) || (player.facing !== -1 && player.facing !== 1)) return null;
@@ -103,7 +108,7 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
     const memoryKeys = new Set<string>();
     for (const event of memories) {
         if (!event || typeof event !== 'object' || !['accused', 'topic', 'statement', 'friction'].includes(event.kind)
-            || (data.version !== 4 && event.kind !== 'accused')
+            || (data.version !== 4 && data.version !== 5 && event.kind !== 'accused')
             || typeof event.npcId !== 'string' || !profiles.has(event.npcId)
             || typeof event.locationId !== 'string' || !Object.prototype.hasOwnProperty.call(world.locations, event.locationId)
             || typeof event.recordedAt !== 'number' || !Number.isFinite(event.recordedAt) || event.recordedAt < 0) return null;
@@ -118,7 +123,28 @@ export function parseSave(value: unknown, world: WorldDefinition): SavedGame | n
         memoryKeys.add(key);
     }
     // V1/v2 never contained case acceptance. Do not infer it from existing discoveries or memory.
-    const cases = data.version === 3 || data.version === 4 ? parseCaseStates(data.cases, world.cases) : {};
+    const cases = data.version === 3 || data.version === 4 || data.version === 5 ? parseCaseStates(data.cases, world.cases) : {};
     if (!cases) return null;
-    return { version: 4, cases, contentVersion: 'bellweather-3', player: { locationId: safePlayer.locationId, x: safePlayer.x, y: safePlayer.y, facing: safePlayer.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ ...event })) };
+    const npcIdentities: Record<string, NpcIdentityKnowledge> = {};
+    if (data.version === 5) {
+        if (!data.npcIdentities || typeof data.npcIdentities !== 'object' || Array.isArray(data.npcIdentities)) return null;
+        for (const [id, raw] of Object.entries(data.npcIdentities)) {
+            if (!profiles.has(id) || !raw || typeof raw !== 'object') return null;
+            const identity = raw as NpcIdentityKnowledge;
+            if (!Number.isFinite(identity.recordedAt) || identity.recordedAt < 0) return null;
+            if (identity.status === 'claimed') {
+                if (typeof identity.claimedName !== 'string' || !identity.claimedName.trim() || identity.claimedName.length > 100) return null;
+                npcIdentities[id] = { status: 'claimed', claimedName: identity.claimedName, recordedAt: identity.recordedAt };
+            } else if (identity.status === 'established') {
+                npcIdentities[id] = { status: 'established', recordedAt: identity.recordedAt };
+            } else return null;
+        }
+    } else {
+        // Older UI named Arthur in every encounter. Infer only when a durable encounter
+        // trace exists; an unvisited clerk remains unknown in a new or empty legacy save.
+        const traces = [...data.discoveries.filter(item => item.id === 'receptionist-account'),
+            ...memories.filter(item => item.npcId === 'receptionist')];
+        if (traces.length) npcIdentities.receptionist = { status: 'established', recordedAt: Math.min(...traces.map(item => item.recordedAt)) };
+    }
+    return { version: 5, cases, contentVersion: 'bellweather-3', player: { locationId: safePlayer.locationId, x: safePlayer.x, y: safePlayer.y, facing: safePlayer.facing }, discoveries: data.discoveries.map(d => ({ id: d.id, recordedAt: d.recordedAt })), npcMemories: memories.map(event => ({ ...event })), npcIdentities };
 }

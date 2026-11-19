@@ -124,7 +124,7 @@ test('save round trip restores position and discoveries, without reopening trans
 
 test('invalid versions, missing records, duplicate evidence and unsafe saved positions are rejected', () => {
     const baseline = new GameSession(hotel).getSave();
-    const invalid = [null, {}, { ...baseline, version: 5 }, { ...baseline, contentVersion: 'other' },
+    const invalid = [null, {}, { ...baseline, version: 6 }, { ...baseline, contentVersion: 'other' },
         { ...baseline, player: { ...baseline.player, locationId: '__proto__' } },
         { ...baseline, player: { ...baseline.player, x: 600, y: 520 } },
         { ...baseline, discoveries: [{ id: 'missing', recordedAt: 1 }] },

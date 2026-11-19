@@ -68,7 +68,7 @@ test('pending acceptance blocks world and other UI commands; leaving invalidates
     assert.deepEqual(session.getSave().cases, {});
 });
 
-test('reloading a pending confirmation preserves v4 and cannot accept automatically', () => {
+test('reloading a pending confirmation preserves v5 and cannot accept automatically', () => {
     const data = new Map();
     const storage = { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
     const session = new GameSession(hotel);
@@ -76,7 +76,7 @@ test('reloading a pending confirmation preserves v4 and cannot accept automatica
     const token = session.getSnapshot().pendingAction.token;
     assert.ok(saveLocal(storage, session));
     const loaded = loadLocal(storage, hotel);
-    assert.equal(loaded.saved.version, 4);
+    assert.equal(loaded.saved.version, 5);
     assert.deepEqual(loaded.saved.cases, {});
     assert.equal('pendingAction' in loaded.saved, false);
     const restored = new GameSession(hotel, loaded.saved);

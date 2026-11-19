@@ -25,6 +25,7 @@ for (const [topic, phrases] of Object.entries({
         'how do i get to room 407', 'is room 407 open', 'can i inspect room 407', 'which floor is room 407'],
     assignment: ['tell me about the assignment', 'why do you need a detective', 'who are you looking for',
         'tell me about daniel', 'what do you want me to do'],
+    introduction: ['what is your name', "what's your name", 'may i have your name', 'could you tell me your name', 'who are you'],
     rapport: ['how are you', 'how is your day', 'how long have you worked here', 'do you like working here'],
     'small-talk': ['how is the weather', 'what do you think of the weather', 'is it raining',
         'how is the coffee', 'do you like coffee'],
@@ -70,6 +71,6 @@ export function routeConversationInput(text: string, recipientId: string, disclo
     // Fail closed, including addresses, paraphrases, mixed messages and unsupported actions.
     // No claim of general natural-language understanding; no raw text reaches NPC context.
     return { kind: 'clarify', message: recipientId === 'receptionist'
-        ? 'Not sent. Arthur rests a hand on the register. “Ask me about Room 407 or what I saw last night, Mr. Kane.”'
+        ? 'Not sent. The clerk rests a hand on the register. “Ask me about Room 407 or what I saw last night, Mr. Kane.”'
         : 'Not sent. Try a direct question about a topic this person can discuss. Use an explicit action to share information.' };
 }

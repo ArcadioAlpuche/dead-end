@@ -78,7 +78,7 @@ test('one accusation persists across repeat submissions, visits, rooms and stora
     assert.equal(restored.getSnapshot().entries.length, 0, 'An accusation establishes no mystery fact');
 });
 
-test('v1 migration preserves player, discoveries and timestamps, adds empty memory/cases and writes v4 to the same slot', () => {
+test('v1 migration preserves player, discoveries and timestamps, adds empty memory/cases and writes v5 to the same slot', () => {
     const v1 = { version: 1, contentVersion: 'bellweather-1', player: { locationId: 'room407', x: 190, y: 550, facing: -1 },
         discoveries: [{ id: 'folded-note', recordedAt: 12345 }, { id: 'receptionist-account', recordedAt: 67890 }] };
     const data = new Map([[SAVE_KEY, JSON.stringify(v1)]]);
@@ -86,7 +86,8 @@ test('v1 migration preserves player, discoveries and timestamps, adds empty memo
     const loaded = loadLocal(storage, hotel);
     assert.equal(loaded.writable, true);
     assert.equal(data.get(SAVE_KEY), JSON.stringify(v1), 'Reading alone does not overwrite the old save');
-    assert.deepEqual(loaded.saved, { ...v1, version: 4, contentVersion: 'bellweather-3', npcMemories: [], cases: {} });
+    assert.deepEqual(loaded.saved, { ...v1, version: 5, contentVersion: 'bellweather-3', npcMemories: [], cases: {},
+        npcIdentities: { receptionist: { status: 'established', recordedAt: 67890 } } });
     const session = new GameSession(hotel, loaded.saved, mockResponder);
     assert.ok(saveLocal(storage, session));
     assert.equal(data.size, 1);
