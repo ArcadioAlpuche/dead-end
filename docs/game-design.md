@@ -80,6 +80,8 @@ The [NPC conversation design](dead-end-npc-conversation-design.md) records the e
 
 **M3 prototype boundary:** arbitrary text may be typed, but only a small, authored whole-message topic grammar reaches an NPC. It recognizes several paraphrases and follow-ups. Unknown or potentially consequential messages remain private and prompt clarification before any NPC context update. Authored disclosure routing is tested with noncanonical fixtures only; no live reporting or other future case action is available. The existing exact accusation-memory demonstration is preserved. This is not unrestricted natural-language understanding.
 
+The prototype also recognizes limited whole-question patterns for existing authored topics. Pronoun follow-ups rely on the active topic of the current conversation; Arthur's replies about a person's destination or possible belongings explicitly avoid claiming facts he has not established. This context is transient and never authorizes a disclosure.
+
 Important NPCs accept typed questions and statements. Their authored profiles distinguish facts known personally, beliefs, uncertainty, motivations, relationships, intentional lies, and observations of the detective. They may lie, evade, misunderstand, or misremember. They recognize meaningful follow-ups and repeated topics, without automatically confessing when contradicted. Background characters may remain entirely scripted.
 
 Persist significant events and authored topic history rather than every chat message. An NPC can react only to information they observed, were told, or learned through a defined communication event. Evelyn cannot detect that the player read a document in Room 407 merely because a global discovery flag changed. No numerical trust/relationship simulation is required for the first case.
@@ -95,13 +97,13 @@ Inspected November 15, 2026:
 | Implemented | Limits |
 | --- | --- |
 | Phaser 4.0.0 / React 19.1.0 / TypeScript 5.7.3 / Vite 6.3.2 | Existing scaffold and configuration retained; no new engine or state library proposed |
-| Four connected hotel spaces plus a staggered placeholder exterior neighborhood, named entries, building footprint collisions, separate exterior camera, interior Detective V2 and a small directional overworld drawing | No full town, office, refuge, inventory, mutable locks, or NPC schedules |
+| Four connected hotel spaces plus a staggered placeholder exterior neighborhood; the playable Bellweather lobby uses approved illustrated scenery, E-style Kane, static Option B Arthur, desk/stair collision, and safe arrivals. Other interiors retain Detective V2 and procedural scenery | No full town, office, refuge, inventory, mutable locks, or NPC schedules; chair, table, plant, and post footprints remain inactive or deferred |
 | Authored Arthur/Thomas/Evelyn profiles, mock adapter and M2 pre-dispatch gate | Arthur is the only physically accessible NPC; supported topic paraphrases and follow-ups work, while unsupported wording stays private. No general language understanding or AI provider |
 | Typed first-accusation memory | Whole “I accuse you” / “I accuse the receptionist” statement only, normalized whitespace/case, optional final `.` or `!`; criticism, questions and longer accusations do not match |
 | Conversation input/focus isolation, pending/error handling, late-reply guard | Transcript capped at 80 lines and cleared on exit/reload; message limit 2,000 characters; typed topic/statement and limited irritation memory persists |
 | Three Room 407 observations plus one attributed receptionist account | No suitcase, register, ledger, theory comparison, verified-fact graph, or outcomes |
 | Public Evelyn offer, explicit accept/defer, stable case-state map, timestamped acceptance history | One shipped assignment; no withdrawal, reopening, resolution, payment, or chapter unlocking |
-| Local save schema v4, v1/v2/v3 migration, preserved unreadable saves | Saves hold player, discoveries, NPC memories and cases; no chapter state, checkpoint UI, export/import or recovery UI |
+| Local save schema v5, content revision `bellweather-3`, v1–v4 and historical lobby-layout migration, preserved unreadable saves | Saves hold player, discoveries, NPC memories, separate identity knowledge, and cases; no chapter state, checkpoint UI, export/import or recovery UI |
 | Automated tests across actions, cases, exploration, conversation, NPC knowledge and animation | Action propose/confirm/cancel, disclosure fixtures, case commands, discovery independence, migration, persistence and input policy are covered; future outcomes/progression remain unimplemented |
 
 Normal movement checkpoints every two seconds; meaningful state changes also save. Storage is one browser-origin slot with historical key `dead-end.bellweather.v1`; schema version is inside the envelope. Case knowledge must remain separate from generated conversation text as the model expands.
